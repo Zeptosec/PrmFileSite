@@ -30,7 +30,7 @@ async function logout() {
 
 <template>
   <div class="wrapper">
-    <RouterLink to="/" class="brnd">PFS</RouterLink>
+    <RouterLink to="/" class="brnd">Perma File Store</RouterLink>
     <nav class="w-right">
       <div class="flex" v-if="theUser == null">
         <RouterLink to="/register">Register</RouterLink>
@@ -79,7 +79,7 @@ async function logout() {
   line-height: 25px;
   transition: .3s;
   cursor: pointer;
-  border-radius: 50% 0px / 50% 0px;
+  border-radius: 30px 0px / 30px 0px;
 }
 
 .wrapper a .brnd {
@@ -127,6 +127,12 @@ html {
       var(--color1) calc(var(--size) * 12));
 }
 
+main {
+  height: 100%;
+  display: grid;
+  align-items: center;
+}
+
 .m-a {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -134,9 +140,12 @@ html {
   color: #2c3e50;
   margin: 0 auto;
   height: 100%;
-  display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.item1 {
+  grid-row: 1 / span 3
 }
 
 #app {

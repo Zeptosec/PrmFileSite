@@ -2,6 +2,7 @@ export const uploadFile = async (file, url) => {
     if (file == null) return;
     var data = new FormData();
     data.append('file', file);
+    console.log("trying to upload")
     const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -9,6 +10,7 @@ export const uploadFile = async (file, url) => {
         },
         body: data
     })
+    console.log("uploaded");
     const json = await res.json();
     if (res.ok) {
         return { name: file.name, location: json.location };

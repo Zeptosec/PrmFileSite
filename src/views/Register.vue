@@ -51,20 +51,22 @@ async function register(e) {
 </script>
 
 <template>
-  <div class="userform">
-    <form @submit="register">
-      <label for="mail">Email</label>
-      <input v-model="email" :class="{ incorrect: failVal.email }" id="mail" type="email">
-      <label for="pass">Password</label>
-      <input v-model="pass" id="pass" :class="{ incorrect: failVal.pass }" type="password">
-      <label for="reppass">Repeat Password</label>
-      <input v-model="reppass" id="reppass" :class="{ incorrect: failVal.reppass }" type="password">
-      <button>Register</button>
-    </form>
-    <ul class="error">
-      <li v-for="(msg, ind) in failMsg" :key="ind">{{msg}}</li>
-    </ul>
-  </div>
+  <main>
+    <div class="userform">
+      <form @submit="register">
+        <label for="mail">Email</label>
+        <input v-model="email" :class="{ incorrect: failVal.email }" id="mail" type="email">
+        <label for="pass">Password</label>
+        <input v-model="pass" id="pass" :class="{ incorrect: failVal.pass }" type="password">
+        <label for="reppass">Repeat Password</label>
+        <input v-model="reppass" id="reppass" :class="{ incorrect: failVal.reppass }" type="password">
+        <button>Register</button>
+      </form>
+      <ul class="error">
+        <li v-for="(msg, ind) in failMsg" :key="ind">{{msg}}</li>
+      </ul>
+    </div>
+  </main>
 </template>
 
 <style scoped>

@@ -16,7 +16,7 @@ const props = defineProps({
     type: Object,
     required: false
   }
-  
+
 })
 
 function onInputChange(e) {
@@ -32,7 +32,7 @@ async function upload() {
     downloadLinks.value = [...downloadLinks.value, ...locs];
     if (props.theUser) {
       let objs = [];
-      for(let i = 0; i < locs.length; i++){
+      for (let i = 0; i < locs.length; i++) {
         objs.push({
           name: locs[i].name, location: locs[i].location, userid: props.theUser.id
         })
@@ -57,32 +57,35 @@ async function upload() {
 
 <template>
   <main>
-    <DropZone class="drop-area" @files-dropped="addFiles" #default="{dropZoneActive}">
-      <label for="file-input">
-        <span v-if="dropZoneActive">
-          <div>Drop Files Here</div>
-        </span>
-        <span v-else>
-          <div>Drag Your Files Here or <em><b>click here</b></em></div>
-        </span>
-      </label>
-      <input type="file" id="file-input" @change="onInputChange" />
-      <ul class="file-list" v-show="files.length">
-        <FilePreview v-for="file of files" :key="file.id" :file="file" tag="li" @remove="removeFile" />
+    <div>
+      <DropZone class="drop-area" @files-dropped="addFiles" #default="{dropZoneActive}">
+        <label for="file-input">
+          <span v-if="dropZoneActive">
+            <div>Drop Files Here</div>
+          </span>
+          <span v-else>
+            <div>Drag Your Files Here or <em><b>click here</b></em></div>
+          </span>
+        </label>
+        <input type="file" id="file-input" @change="onInputChange" />
+        <ul class="file-list" v-show="files.length">
+          <FilePreview v-for="file of files" :key="file.id" :file="file" tag="li" @remove="removeFile" />
+        </ul>
+      </DropZone>
+      <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload"
+        class="upload-button">Upload</button>
+      <h2 v-show="errMsg" class="error">{{errMsg}}</h2>
+      <ul>
+        <li v-for="(link, ind) in downloadLinks" :key="ind">
+          <p><a :href="link.location">{{link.name}}</a></p>
+        </li>
       </ul>
-    </DropZone>
-    <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload"
-      class="upload-button">Upload</button>
-    <h2 v-show="errMsg" class="error">{{errMsg}}</h2>
-    <ul>
-      <li v-for="(link, ind) in downloadLinks" :key="ind">
-        <p><a :href="link.location">{{link.name}}</a></p>
-      </li>
-    </ul>
+    </div>
   </main>
 </template>
 
 <style>
+
 .error {
   color: #cc2211;
 }

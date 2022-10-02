@@ -39,7 +39,7 @@ router.beforeEach(async (to, from) => {
   const { theUser, loadUser } = useUser();
   if(!theUser.value)
     await loadUser();
-  console.log(theUser);
+  //console.log(theUser);
   if(to.name === "files" && !theUser.value){
     return { name: "home" };
   }
