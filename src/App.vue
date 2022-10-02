@@ -21,7 +21,7 @@ async function logout() {
     alert(error);
     return;
   }
-  console.log('signed out');
+  //console.log('signed out');
   theUser.value = null;
   router.push('/');
 }

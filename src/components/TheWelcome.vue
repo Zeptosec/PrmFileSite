@@ -11,7 +11,7 @@ const submitFile = async () => {
   isUploading.value = true;
   if (file.value == null) return;
   try {
-    console.log(file.value);
+    //console.log(file.value);
     var data = new FormData();
     data.append('file', file.value);
     const res = await fetch(`${apiEndPoint}/upload`, {
@@ -20,7 +20,7 @@ const submitFile = async () => {
     })
     if (res.ok) {
       const json = await res.json();
-      console.log(json.msg);
+      //console.log(json.msg);
     }
   } finally {
     isUploading.value = false;
