@@ -6,7 +6,7 @@ import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
 import { supabase } from '../supabase';
 const { files, addFiles, removeFile } = useFileList();
-const apiEndPoint = "https://permafilestore.cyclic.app";
+const apiEndPoint = /*"http://localhost:3001";*/"https://permafileupload.glitch.me/";
 const isUploading = ref(false);
 const downloadLinks = ref([]);
 const errMsg = ref(null);
