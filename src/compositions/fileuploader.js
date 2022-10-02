@@ -4,6 +4,9 @@ export const uploadFile = async (file, url) => {
     data.append('file', file);
     const res = await fetch(url, {
         method: 'POST',
+        headers: {
+            "Access-Control-Allow-Origin": "*"
+        },
         body: data
     })
     const json = await res.json();
