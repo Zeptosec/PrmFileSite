@@ -11,7 +11,7 @@ onMounted(async () => {
   await loadUser();
 })
 
-function loggedin(u){
+function loggedin(u) {
   theUser.value = u.value
 }
 
@@ -38,7 +38,7 @@ async function logout() {
       </div>
       <div v-else class="flex">
         <a @click="logout">Logout</a>
-        <span>{{theUser.email}}</span>
+        <span class="sm-disable">{{theUser.email}}</span>
         <RouterLink to="/files">Files</RouterLink>
       </div>
     </nav>
@@ -50,6 +50,13 @@ async function logout() {
 </template>
 
 <style scoped>
+@media only screen and (max-width: 600px) {
+  .sm-disable {
+    display: none;
+  }
+
+}
+
 .w-right {
   float: right;
 }
