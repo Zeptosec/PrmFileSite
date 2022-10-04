@@ -21,7 +21,8 @@ const files = ref([])
 onMounted(async () => {
     const { data, error } = await supabase
         .from('StoredFiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
     if (error) {
         msg.value = error;
         return;

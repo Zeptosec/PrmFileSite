@@ -19,13 +19,22 @@ export const uploadFile = async (file, url) => {
     }
 }
 
-export const uploadFiles = async (files, url) => {
+export const uploadFileChunked = async () => {
+    /// implement file splitting into chunks
+}
+
+export const uploadFiles = async (files, url, errMsg = null) => {
     if (files == null) return;
     let locs = [];
+    let cnt = 0;
     await Promise.all(
         files.map(
             async file => {
-                locs.push(await uploadFile(file.file, url))
+                locs.push(await uploadFile(file.file, url));
+                if (errMsg != null) {
+                    cnt++;
+                    errMsg.value = `Files uploaded ${cnt}/${files.length}`;
+                }
             }
         )
     );

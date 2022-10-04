@@ -25,10 +25,14 @@ function onInputChange(e) {
 }
 
 async function upload() {
-  errMsg.value = null;
   isUploading.value = true;
+  errMsg.value = "Waking up the server...";
   try {
-    let locs = await uploadFiles(files.value, `${apiEndPoint}/api/upload`);
+    let res = await fetch(apiEndPoint);
+    if(res.ok){
+      errMsg.value = "Server awake. Starting the upload.";
+    }
+    let locs = await uploadFiles(files.value, `${apiEndPoint}/api/upload`, errMsg);
     downloadLinks.value = [...downloadLinks.value, ...locs];
     if (props.theUser) {
       let objs = [];
@@ -50,6 +54,7 @@ async function upload() {
     errMsg.value = err.message;
   } finally {
     isUploading.value = false;
+    console.log(errMsg.value)
   }
 }
 
