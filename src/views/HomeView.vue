@@ -1,12 +1,12 @@
 <script setup>
 import useFileList from '../compositions/filelist';
-import { uploadFiles } from '../compositions/fileuploader';
+import { uploadFiles, chunkSize } from '../compositions/fileuploader';
 import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
 import { supabase } from '../supabase';
 const { files, addFiles, removeFile } = useFileList();
-const apiEndPoint = /*"http://localhost:3001";*/"https://permafileupload.glitch.me/";
+const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.glitch.me";
 const isUploading = ref(false);
 const downloadLinks = ref([]);
 const errMsg = ref(null);
@@ -24,29 +24,54 @@ function onInputChange(e) {
   e.target.value = null // reset so that selecting the same file again will still cause it to fire this change
 }
 
+async function savObjsToDB(objs, table) {
+  if (!objs || objs.length == 0)
+    return null;
+  const { error, data } = await supabase
+    .from(table)
+    .insert(objs);
+  if (error) {
+    throw Error(error);
+  }
+  return data;
+}
+
 async function upload() {
   isUploading.value = true;
   errMsg.value = "Waking up the server...";
   try {
     let res = await fetch(apiEndPoint);
-    if(res.ok){
+    if (res.ok) {
       errMsg.value = "Server awake. Starting the upload.";
     }
     let locs = await uploadFiles(files.value, `${apiEndPoint}/api/upload`, errMsg);
-    downloadLinks.value = [...downloadLinks.value, ...locs];
     if (props.theUser) {
       let objs = [];
+      let bigs = [];
       for (let i = 0; i < locs.length; i++) {
-        objs.push({
-          name: locs[i].name, location: locs[i].location, userid: props.theUser.id
-        })
+        if (locs[i].size > chunkSize) {
+          bigs.push({
+            name: locs[i].name, chunks: locs[i].location, userid: props.theUser.id, size: locs[i].size
+          });
+        } else {
+          objs.push({
+            name: locs[i].name, location: locs[i].location, userid: props.theUser.id, size: locs[i].size
+          });
+        }
       }
-      const { error } = await supabase
-        .from('StoredFiles')
-        .insert(objs);
-      if (error) {
-        throw Error(error);
+      console.log(objs);
+      await savObjsToDB(objs, 'StoredFiles');
+      const data = await savObjsToDB(bigs, 'Files')
+      let urls = [];
+      if (data) {
+        for (let i = 0; i < data.length; i++) {
+          urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
+        }
       }
+      //push to urls links from data.....
+      downloadLinks.value = [...downloadLinks.value, ...objs, ...urls];
+    } else {
+      downloadLinks.value = [...downloadLinks.value, ...locs];
     }
     files.value = [];
   } catch (err) {
@@ -90,7 +115,6 @@ async function upload() {
 </template>
 
 <style>
-
 .error {
   color: #cc2211;
 }
