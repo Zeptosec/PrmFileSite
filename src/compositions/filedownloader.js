@@ -1,4 +1,4 @@
-const proxy = "https://anywhrcrs.azurewebsites.net/";
+const proxy = "https://crsfr.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
 
 function formatUrl(url) {
     const ind = url.indexOf('://');
@@ -32,7 +32,7 @@ function downloadFile(file) {
 export async function download(filename, urls) {
     let blobs = [];
     for (let i = 0; i < urls.length; i++) {
-        const res = await fetch(proxy + formatUrl(urls[i]), {
+        const res = await fetch(proxy + urls[i]/*formatUrl(urls[i])*/, {
             headers: {
                 "X-Requested-With": "XMLHttpRequest"
             }
