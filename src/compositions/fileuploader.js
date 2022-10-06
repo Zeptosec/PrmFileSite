@@ -55,7 +55,7 @@ export const uploadFile = async (file, url) => {
     console.log("uploaded");
     const json = await res.json();
     if (res.ok) {
-        return { name: file.name, location: json.location, size: file.size };
+        return { name: file.name, location: [json.location], size: file.size };
     } else {
         throw Error(json.error);
     }

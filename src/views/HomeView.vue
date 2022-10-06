@@ -47,31 +47,35 @@ async function upload() {
     let locs = await uploadFiles(files.value, `${apiEndPoint}/api/upload`, errMsg);
     if (props.theUser) {
       let objs = [];
-      let bigs = [];
       for (let i = 0; i < locs.length; i++) {
         if (locs[i].size > chunkSize) {
-          bigs.push({
+          objs.push({
             name: locs[i].name, chunks: locs[i].location, userid: props.theUser.id, size: locs[i].size
           });
         } else {
           objs.push({
-            name: locs[i].name, location: locs[i].location, userid: props.theUser.id, size: locs[i].size
+            name: locs[i].name, chunks: locs[i].location, userid: props.theUser.id, size: locs[i].size, fileid: null
           });
         }
       }
       console.log(objs);
-      await savObjsToDB(objs, 'StoredFiles');
-      const data = await savObjsToDB(bigs, 'Files')
+      const data = await savObjsToDB(objs, 'Files')
       let urls = [];
       if (data) {
         for (let i = 0; i < data.length; i++) {
-          urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
+          if (data[i].fileid) {
+            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
+          } else {
+            urls.push({ location: data[i].chunks[0], name: data[i].name });
+          }
         }
       }
       //push to urls links from data.....
-      downloadLinks.value = [...downloadLinks.value, ...objs, ...urls];
+      downloadLinks.value = [...downloadLinks.value, ...urls];
     } else {
-      downloadLinks.value = [...downloadLinks.value, ...locs];
+      for (let i = 0; i < locs.length; i++) {
+        downloadLinks.value.push({ location: locs[i].location[0], name: locs[i].name });
+      }
     }
     files.value = [];
   } catch (err) {
