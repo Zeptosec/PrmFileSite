@@ -29,6 +29,59 @@ function downloadFile(file) {
     window.URL.revokeObjectURL(url)
 }
 
+export async function downloadWithStatus(filename, urls, size, status) {
+    let blobs = [];
+    let receivedLength = 0; // received that many bytes at the moment
+
+    await Promise.all(urls.map(async w => {
+        let res;
+        res = await fetch(proxy + w, {
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+        while (!res.ok) {
+            console.log("failed to fetch retrying in 3 seconds")
+            await new Promise(r => setTimeout(r, 3000));
+            res = await fetch(proxy + urls[i], {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+        }
+
+        const reader = res.body.getReader();
+
+        let chunks = []; // array of received binary chunks (comprises the body)
+
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            chunks.push(value);
+            receivedLength += value.length;
+
+            status.value.msg = `Download progress: ${Math.round(receivedLength / size * 10000) / 100}%`
+        }
+
+        const blob = new Blob(chunks);
+
+        blobs.push(blob);
+    }));
+
+    if (blobs.length > 0) {
+        let file = new File(blobs, filename)
+        status.value.finished = true;
+        status.value.msg = "Download Complete";
+        downloadFile(file);
+    } else {
+        status.value = "Failed to download"
+    }
+}
+
 export async function download(filename, urls) {
     let blobs = [];
     for (let i = 0; i < urls.length; i++) {

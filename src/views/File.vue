@@ -1,7 +1,9 @@
 <template>
     <main>
         <div>
-            <h1>{{data}}</h1>
+            <h1>{{data.msg}}</h1>
+            <button v-if="data.found" @click="startDownload" :disabled="status.downloading">Download</button>
+            <h2 v-if="status.downloading">status: {{status.msg}}</h2>
         </div>
     </main>
 </template>
@@ -9,35 +11,45 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { download } from '../compositions/filedownloader';
+import { download, downloadWithStatus } from '../compositions/filedownloader';
 
 const route = useRoute();
-const data = ref("Please wait fetching details...");
+const data = ref({ msg: "Please wait fetching details...", found: false });
+const status = ref({ msg: "", finished: false, downloading: false });
+const filedata = ref(null);
+
+async function startDownload() {
+    data.value.msg = "Starting the download.";
+    status.value.downloading = true;
+    try {
+        await downloadWithStatus(filedata.value.name, filedata.value.chunks, filedata.value.size, status);
+        //await download(filedata.name, filedata.chunks);
+    } catch (err) {
+        console.log(err);
+        data.value.msg = "Download failed. " + err.message;
+    }
+}
+
 onMounted(async () => {
     // fetch links and download using filedownloader
     const id = route.params.id;
     if (!id) {
-        data.value = "No id was found in a query";
+        data.value.msg = "No id was found in a query";
         return;
     }
     const res = await fetch("https://tartan-general-scion.glitch.me/api/file?id=" + id);
     const json = await res.json();
     if (res.ok) {
-        const filedata = json.data[0];
-        console.log(filedata);
-        if (!filedata) {
-            data.value = "File was not found";
+        filedata.value = json.data[0];
+        console.log(filedata.value);
+        if (!filedata.value) {
+            data.value.msg = "File was not found";
         } else {
-            data.value = "File was found. Starting the download.";
-            try {
-                await download(filedata.name, filedata.chunks);
-                console.log("Download was successful.")
-            } catch (err) {
-                data.value = "Download failed. " + err.message;
-            }
+            data.value.msg = "File was found.";
+            data.value.found = true;
         }
     } else {
-        data.value = json.error;
+        data.value.msg = json.error;
     }
 })
 </script>

@@ -2,7 +2,7 @@ import { supabase } from '../supabase';
 
 export const chunkSize = 8 * 1024 * 1024;
 
-async function uploadChunked(file, url) {
+async function uploadChunked(file, url, status) {
     const locs = [];
 
     let cnt = 1;
@@ -13,7 +13,6 @@ async function uploadChunked(file, url) {
         const chunk = file.slice(start, end);
         const dataForm = new FormData();
         dataForm.append('file', chunk);
-        console.log("uploading " + cnt + " chunk");
         const res = await fetch(url, {
             method: 'POST',
             headers: {
@@ -31,9 +30,6 @@ async function uploadChunked(file, url) {
 
 export const uploadFile = async (file, url) => {
     if (file == null) return;
-    // await downloadChunked("spraygen-134.zip",
-    //     ['https://cdn.discordapp.com/attachments/1025526944776867952/1026897371382173806/blob',
-    //         'https://cdn.discordapp.com/attachments/1025526944776867952/1026897389430251530/blob']);
     if (file.size > chunkSize) {
         const user = supabase.auth.user();
         if(!user){
