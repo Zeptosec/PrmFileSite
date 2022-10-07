@@ -36,12 +36,12 @@ async function login(e) {
             if (error) throw error
             theUser.value = user;
             emit('logged-in', theUser)
-            const redir = await router.pushState({ name: 'home' });
+            const redir = await router.push({ name: 'home' });
             if (isNavigationFailure(redir, NavigationFailureType.aborted)) {
                 console.log("navigation was aborted trying again...");
-                await router.pushState({ name: 'home' });
+                await router.push({ name: 'home' });
             }
-            //failMsg.value.push("We sent you an email to confirm your email address");
+            //failMsg.value.push("We sent you an emaEil to confirm your email address");
         } catch (err) {
             failMsg.value.push(err.message);
         }
