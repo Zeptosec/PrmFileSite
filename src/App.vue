@@ -23,7 +23,7 @@ async function logout() {
   }
   //console.log('signed out');
   theUser.value = null;
-  router.pushState('/');
+  router.push('/');
 }
 
 </script>

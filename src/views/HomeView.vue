@@ -1,6 +1,6 @@
 <script setup>
 import useFileList from '../compositions/filelist';
-import { uploadFiles, chunkSize } from '../compositions/fileuploader';
+import { uploadFiles, chunkSize, uploadFilesWithStatus } from '../compositions/fileuploader';
 import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
@@ -10,6 +10,7 @@ const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.gl
 const isUploading = ref(false);
 const downloadLinks = ref([]);
 const errMsg = ref(null);
+const status = ref({ files: [], finished: true, hasErrors: false });
 
 const props = defineProps({
   theUser: {
@@ -37,6 +38,59 @@ async function savObjsToDB(objs, table) {
 }
 
 async function upload() {
+  isUploading.value = true;
+  errMsg.value = "Waking up the server...";
+  try {
+    let res = await fetch(apiEndPoint);
+    if (res.ok) {
+      errMsg.value = "Server awake. Starting the upload...";
+    }
+    let filesFrom = status.value.files.length;
+    let filesTo = filesFrom + files.value.length;
+    await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser != null, status);
+
+    if (props.theUser) {
+      let objs = [];
+      for (let i = filesFrom; i < filesTo; i++) {
+        let f = status.value.files[i].value;
+        if(f.error) continue;
+        if (f.size > chunkSize) {
+          objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size });
+        } else {
+          objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size, fileid: null });
+        }
+      }
+      const data = await savObjsToDB(objs, 'Files')
+      let urls = [];
+      if (data) {
+        for (let i = 0; i < data.length; i++) {
+          if (data[i].fileid) {
+            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
+          } else {
+            urls.push({ location: data[i].chunks[0], name: data[i].name });
+          }
+        }
+      }
+      //push to urls links from data.....
+      downloadLinks.value = [...downloadLinks.value, ...urls];
+    } else {
+      for (let i = filesFrom; i < filesTo; i++) {
+        let f = status.value.files[i].value;
+        if(f.error) continue;
+        downloadLinks.value.push({ location: f.location[0], name: f.name });
+      }
+    }
+    files.value = [];
+    errMsg.value = "Upload was successful";
+  } catch (err) {
+    console.log(err);
+    errMsg.value = err.message;
+  } finally {
+    isUploading.value = false;
+  }
+}
+
+async function uploadold() {
   isUploading.value = true;
   errMsg.value = "Waking up the server...";
   try {
@@ -109,6 +163,25 @@ async function upload() {
       <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload"
         class="upload-button">Upload</button>
       <h2 v-show="errMsg" class="error">{{errMsg}}</h2>
+      <div v-if="(status && !status.finished) || status.hasErrors">
+        <h3>File uploading status</h3>
+        <i><b>wait until file status changes to uploaded</b></i>
+        <table>
+          <thead>
+            <th>filename</th>
+            <th>status</th>
+          </thead>
+          <tr v-for="(statuses, ind) in status.files" :key="ind">
+            <!-- No clue how to do it with less v-if's it's for a future me problem-->
+            <td v-if="!statuses.value.finished">{{statuses.value.name}}</td>
+            <td v-if="!statuses.value.finished && !statuses.value.error">
+              {{Math.round(statuses.value.uploadedBytes/statuses.value.size*10000)/100}}%</td>
+            <td v-if="statuses.value.error" class="error">{{statuses.value.error}}</td>
+            <td v-if="statuses.value.finished">{{statuses.value.name}}</td>
+            <td v-if="statuses.value.finished" class="success">uploaded</td>
+          </tr>
+        </table>
+      </div>
       <ul>
         <li v-for="(link, ind) in downloadLinks" :key="ind">
           <p><a :href="link.location">{{link.name}}</a></p>
@@ -119,8 +192,38 @@ async function upload() {
 </template>
 
 <style>
+table {
+  border-collapse: collapse;
+  max-width: 800px;
+  text-align: left;
+  margin: 18px auto;
+}
+
+td,
+th {
+  border: 1px solid #ddd;
+  padding: 5px;
+}
+
+tr:hover {
+  background-color: #ddd;
+}
+
+tr {
+  background-color: #f2f2f2;
+}
+
+th {
+  background-color: #279e2d;
+  color: white;
+}
+
 .error {
   color: #cc2211;
+}
+
+.success {
+  color: #12b61a;
 }
 
 ul {

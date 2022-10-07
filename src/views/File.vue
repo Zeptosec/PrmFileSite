@@ -2,8 +2,12 @@
     <main>
         <div>
             <h1>{{data.msg}}</h1>
+            <div v-if="filedata">
+                <h3>name: {{filedata.name}}</h3>
+                <h3>size: {{filedata.readableSize}}</h3>
+            </div>
             <button v-if="data.found" @click="startDownload" :disabled="status.downloading">Download</button>
-            <h2 v-if="status.downloading">status: {{status.msg}}</h2>
+            <h2 v-if="status.downloading">{{status.msg}}</h2>
         </div>
     </main>
 </template>
@@ -21,6 +25,7 @@ const filedata = ref(null);
 async function startDownload() {
     data.value.msg = "Starting the download.";
     status.value.downloading = true;
+    status.value.msg = "Waking up the server...";
     try {
         await downloadWithStatus(filedata.value.name, filedata.value.chunks, filedata.value.size, status);
         //await download(filedata.name, filedata.chunks);
@@ -28,6 +33,16 @@ async function startDownload() {
         console.log(err);
         data.value.msg = "Download failed. " + err.message;
     }
+}
+
+function toReadable(size){
+    let cnt = 0;
+    while(size / 1024 > 1){
+        size /= 1024;
+        cnt++;
+    }
+    const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
+    return `${Math.round(size * 100) / 100} ${sizes[cnt]}`;
 }
 
 onMounted(async () => {
@@ -40,7 +55,9 @@ onMounted(async () => {
     const res = await fetch("https://tartan-general-scion.glitch.me/api/file?id=" + id);
     const json = await res.json();
     if (res.ok) {
+        json.data[0].readableSize = toReadable(json.data[0].size);
         filedata.value = json.data[0];
+
         console.log(filedata.value);
         if (!filedata.value) {
             data.value.msg = "File was not found";

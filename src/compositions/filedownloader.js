@@ -52,7 +52,7 @@ export async function downloadWithStatus(filename, urls, size, status) {
 
         const reader = res.body.getReader();
 
-        let chunks = []; // array of received binary chunks (comprises the body)
+        let chunks = [];
 
         while (true) {
             const { done, value } = await reader.read();
