@@ -103,7 +103,7 @@ async function upload() {
             <div>Drag Your Files Here or <em><b>click here</b></em></div>
           </span>
         </label>
-        <input type="file" id="file-input" @change="onInputChange" />
+        <input type="file" id="file-input" multiple @change="onInputChange" />
         <ul class="file-list" v-show="files.length">
           <FilePreview v-for="file of files" :key="file.id" :file="file" tag="li" @remove="removeFile" />
         </ul>
