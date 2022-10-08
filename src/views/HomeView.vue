@@ -54,7 +54,7 @@ async function upload() {
       let objs = [];
       for (let i = filesFrom; i < filesTo; i++) {
         let f = status.value.files[i].value;
-        if(f.error) continue;
+        if (f.error) continue;
         if (f.size > chunkSize) {
           objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size });
         } else {
@@ -81,7 +81,7 @@ async function upload() {
     } else {
       for (let i = filesFrom; i < filesTo; i++) {
         let f = status.value.files[i].value;
-        if(f.error) continue;
+        if (f.error) continue;
         downloadLinks.value.push({ location: f.location[0], name: f.name });
       }
     }
@@ -187,6 +187,10 @@ ul {
 .file-list {
   display: flex;
   flex-wrap: wrap;
+}
+
+.file-list > * {
+  flex: 1 1 160px;
 }
 
 .drop-area {

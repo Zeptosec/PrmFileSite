@@ -7,7 +7,10 @@
                 <h3>size: {{filedata.readableSize}}</h3>
             </div>
             <button v-if="data.found" @click="startDownload" :disabled="status.downloading">Download</button>
-            <h2 v-if="status.downloading">{{status.msg}}</h2>
+            <div v-if="status.downloading">
+                <h2>{{status.msg}}</h2>
+                <h3>{{toReadable(status.downloadedBytes)}} / {{filedata.readableSize}}</h3>
+            </div>
         </div>
     </main>
 </template>
@@ -19,7 +22,7 @@ import { downloadWithStatus, toReadable } from '../compositions/filedownloader';
 
 const route = useRoute();
 const data = ref({ msg: "Please wait fetching details...", found: false });
-const status = ref({ msg: "", finished: false, downloading: false });
+const status = ref({ msg: "", finished: false, downloading: false, downloadedBytes: 0 });
 const filedata = ref(null);
 
 async function startDownload() {

@@ -58,7 +58,8 @@ export async function downloadWithStatus(filename, urls, size, status) {
             chunks.push(value);
             receivedLength += value.length;
 
-            status.value.msg = `Download progress: ${Math.round(receivedLength / size * 10000) / 100}%`
+            status.value.msg = `Download progress: ${Math.round(receivedLength / size * 10000) / 100}%`;
+            status.value.downloadedBytes = receivedLength;
         }
 
         const blob = new Blob(chunks);
