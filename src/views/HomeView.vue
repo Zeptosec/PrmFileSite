@@ -5,13 +5,13 @@ import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
 import { supabase } from '../supabase';
+import { objectToString } from '@vue/shared';
 const { files, addFiles, removeFile } = useFileList();
 const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.glitch.me";
 const isUploading = ref(false);
 const downloadLinks = ref([]);
 const errMsg = ref(null);
 const status = ref({ files: [], finished: true, hasErrors: false });
-
 const props = defineProps({
   theUser: {
     type: Object,
@@ -48,7 +48,8 @@ async function upload() {
     let filesFrom = status.value.files.length;
     let filesTo = filesFrom + files.value.length;
     await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser != null, status);
-
+    console.log("statuses");
+    console.log(status.value);
     if (props.theUser) {
       let objs = [];
       for (let i = filesFrom; i < filesTo; i++) {
@@ -60,7 +61,11 @@ async function upload() {
           objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size, fileid: null });
         }
       }
+      console.log("objs");
+      console.log(objs);
       const data = await savObjsToDB(objs, 'Files')
+      console.log("Data");
+      console.log(data);
       let urls = [];
       if (data) {
         for (let i = 0; i < data.length; i++) {

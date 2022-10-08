@@ -81,7 +81,7 @@ const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
         }
         await uploadChunkedWithStatus(file, url, status);
     } else {
-        await uploadChunkWithStatus(file, url, status);
+        await uploadChunkWithStatus(file, url, status, 0);
     }
     status.value.finished = true;
 }
