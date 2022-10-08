@@ -1,19 +1,13 @@
 const proxy = "https://crsfr.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
 
-function formatUrl(url) {
-    const ind = url.indexOf('://');
-    let nurl = "";
-    if (ind != -1) {
-        nurl = url.split('://')[1];
-    } else {
-        nurl = url;
+export function toReadable(size) {
+    let cnt = 0;
+    while (size / 1024 > 1) {
+        size /= 1024;
+        cnt++;
     }
-    const portPlace = nurl.indexOf("/");
-    if (portPlace == -1)
-        return nurl + ":443";
-    const part1 = nurl.slice(0, portPlace);
-    const part2 = nurl.slice(portPlace);
-    return part1 + ":443" + part2;
+    const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
+    return `${Math.round(size * 100) / 100} ${sizes[cnt]}`;
 }
 
 function downloadFile(file) {
@@ -33,7 +27,7 @@ export async function downloadWithStatus(filename, urls, size, status) {
     let blobs = [];
     let receivedLength = 0; // received that many bytes at the moment
 
-    await Promise.all(urls.map(async w => {
+    await Promise.all(urls.map(async (w, index) => {
         let res;
         res = await fetch(proxy + w, {
             headers: {
@@ -68,8 +62,8 @@ export async function downloadWithStatus(filename, urls, size, status) {
         }
 
         const blob = new Blob(chunks);
+        blobs[index] = blob;
 
-        blobs.push(blob);
     }));
 
     if (blobs.length > 0) {
@@ -80,19 +74,4 @@ export async function downloadWithStatus(filename, urls, size, status) {
     } else {
         status.value = "Failed to download"
     }
-}
-
-export async function download(filename, urls) {
-    let blobs = [];
-    for (let i = 0; i < urls.length; i++) {
-        const res = await fetch(proxy + urls[i]/*formatUrl(urls[i])*/, {
-            headers: {
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
-        const blob = await res.blob();
-        blobs.push(blob);
-    }
-    let file = new File(blobs, filename)
-    downloadFile(file);
 }

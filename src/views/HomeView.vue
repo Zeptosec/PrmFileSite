@@ -1,6 +1,6 @@
 <script setup>
 import useFileList from '../compositions/filelist';
-import { uploadFiles, chunkSize, uploadFilesWithStatus } from '../compositions/fileuploader';
+import { chunkSize, uploadFilesWithStatus } from '../compositions/fileuploader';
 import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
@@ -89,58 +89,6 @@ async function upload() {
     isUploading.value = false;
   }
 }
-
-async function uploadold() {
-  isUploading.value = true;
-  errMsg.value = "Waking up the server...";
-  try {
-    let res = await fetch(apiEndPoint);
-    if (res.ok) {
-      errMsg.value = "Server awake. Starting the upload.";
-    }
-    let locs = await uploadFiles(files.value, `${apiEndPoint}/api/upload`, errMsg);
-    if (props.theUser) {
-      let objs = [];
-      for (let i = 0; i < locs.length; i++) {
-        if (locs[i].size > chunkSize) {
-          objs.push({
-            name: locs[i].name, chunks: locs[i].location, userid: props.theUser.id, size: locs[i].size
-          });
-        } else {
-          objs.push({
-            name: locs[i].name, chunks: locs[i].location, userid: props.theUser.id, size: locs[i].size, fileid: null
-          });
-        }
-      }
-      console.log(objs);
-      const data = await savObjsToDB(objs, 'Files')
-      let urls = [];
-      if (data) {
-        for (let i = 0; i < data.length; i++) {
-          if (data[i].fileid) {
-            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
-          } else {
-            urls.push({ location: data[i].chunks[0], name: data[i].name });
-          }
-        }
-      }
-      //push to urls links from data.....
-      downloadLinks.value = [...downloadLinks.value, ...urls];
-    } else {
-      for (let i = 0; i < locs.length; i++) {
-        downloadLinks.value.push({ location: locs[i].location[0], name: locs[i].name });
-      }
-    }
-    files.value = [];
-  } catch (err) {
-    console.log(err);
-    errMsg.value = err.message;
-  } finally {
-    isUploading.value = false;
-    console.log(errMsg.value)
-  }
-}
-
 </script>
 
 <template>

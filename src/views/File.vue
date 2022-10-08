@@ -15,7 +15,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { download, downloadWithStatus } from '../compositions/filedownloader';
+import { downloadWithStatus, toReadable } from '../compositions/filedownloader';
 
 const route = useRoute();
 const data = ref({ msg: "Please wait fetching details...", found: false });
@@ -33,16 +33,6 @@ async function startDownload() {
         console.log(err);
         data.value.msg = "Download failed. " + err.message;
     }
-}
-
-function toReadable(size){
-    let cnt = 0;
-    while(size / 1024 > 1){
-        size /= 1024;
-        cnt++;
-    }
-    const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
-    return `${Math.round(size * 100) / 100} ${sizes[cnt]}`;
 }
 
 onMounted(async () => {

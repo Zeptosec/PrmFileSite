@@ -4,86 +4,14 @@ import axios from 'axios'
 
 export const chunkSize = 8 * 1024 * 1024;
 
-async function uploadChunked(file, url, status) {
-    const locs = [];
-
-    let cnt = 1;
-    let start = 0;
-    let end = 0;
-    while (end < file.size) {
-        end = Math.min(chunkSize * cnt, file.size)
-        const chunk = file.slice(start, end);
-        const dataForm = new FormData();
-        dataForm.append('file', chunk);
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                "Access-Control-Allow-Origin": "*"
-            },
-            body: dataForm
-        });
-        const json = await res.json();
-        locs.push(json.location);
-        start = end;
-        cnt++;
-    }
-    return locs;
-}
-
-export const uploadFile = async (file, url) => {
-    if (file == null) return;
-    if (file.size > chunkSize) {
-        const user = supabase.auth.user();
-        if (!user) {
-            throw Error("File is too large. To upload file larger than 8 MB please login.");
-        }
-        const locs = await uploadChunked(file, url);
-        return { name: file.name, location: locs, size: file.size };
-    }
-    var data = new FormData();
-    data.append('file', file);
-    console.log("trying to upload")
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-            "Access-Control-Allow-Origin": "*"
-        },
-        body: data
-    })
-    console.log("uploaded");
-    const json = await res.json();
-    if (res.ok) {
-        return { name: file.name, location: [json.location], size: file.size };
-    } else {
-        throw Error(json.error);
-    }
-}
-
-export const uploadFiles = async (files, url, errMsg = null) => {
-    if (files == null) return;
-    let locs = [];
-    let cnt = 0;
-    await Promise.all(
-        files.map(
-            async file => {
-                locs.push(await uploadFile(file.file, url));
-                if (errMsg != null) {
-                    cnt++;
-                    errMsg.value = `Files uploaded ${cnt}/${files.length}`;
-                }
-            }
-        )
-    );
-    return locs;
-}
-
 /**
  * 
  * @param {File} chunk uploads a single chunk to server.
  * @param {string} url api end point to upload to.
  * @param {Object} status ref to status for storing information about upload
+ * @param {Number} index where in array to store this blob for reconstruction purposes
  */
-const uploadChunkWithStatus = async (chunk, url, status) => {
+const uploadChunkWithStatus = async (chunk, url, status, index) => {
     if (chunk.size > chunkSize)
         throw Error("Chunk size is too big");
 
@@ -106,7 +34,7 @@ const uploadChunkWithStatus = async (chunk, url, status) => {
     if (res == null)
         throw Error("Failed to get a response");
     const json = res.data;
-    status.value.location.push(json.location);
+    status.value.location[index] = json.location;
 }
 
 /**
@@ -123,7 +51,7 @@ const uploadChunkedWithStatus = async (file, url, status) => {
     while (end < file.size) {
         end = Math.min(chunkSize * cnt, file.size)
         const chunk = file.slice(start, end);
-        promises.push(uploadChunkWithStatus(chunk, url, status));
+        promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1));
         start = end;
         cnt++;
     }
