@@ -48,8 +48,8 @@ async function upload() {
     let filesFrom = status.value.files.length;
     let filesTo = filesFrom + files.value.length;
     await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser != null, status);
-    console.log("statuses");
-    console.log(status.value);
+    // console.log("statuses");
+    // console.log(status.value);
     if (props.theUser) {
       let objs = [];
       for (let i = filesFrom; i < filesTo; i++) {
@@ -61,11 +61,11 @@ async function upload() {
           objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size, fileid: null });
         }
       }
-      console.log("objs");
-      console.log(objs);
+      // console.log("objs");
+      // console.log(objs);
       const data = await savObjsToDB(objs, 'Files')
-      console.log("Data");
-      console.log(data);
+      // console.log("Data");
+      // console.log(data);
       let urls = [];
       if (data) {
         for (let i = 0; i < data.length; i++) {
