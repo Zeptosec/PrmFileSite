@@ -70,7 +70,6 @@ const uploadChunkedWithStatus = async (file, url, status) => {
         if (promises.length >= 10) {
             completed = await Promise.any(promises);
         }
-        console.log(promises);
         if (completed != null) {
             promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed);
         } else {
