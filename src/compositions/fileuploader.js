@@ -11,7 +11,7 @@ export const chunkSize = 8 * 1024 * 1024;
  * @param {Object} status ref to status for storing information about upload
  * @param {Number} index where in array to store this blob for reconstruction purposes
  */
-const uploadChunkWithStatus = async (chunk, url, status, index) => {
+const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     if (chunk.size > chunkSize)
         throw Error("Chunk size is too big");
 
@@ -19,22 +19,32 @@ const uploadChunkWithStatus = async (chunk, url, status, index) => {
     data.append('file', chunk);
     let prevLoaded = 0;
     let res = null;
-    try {
-        res = await axios.post(url, data, {
-            onUploadProgress: function (event) {
-                // for small files on fast internet otherwise overshoots
-                let loaded = Math.min(event.loaded, chunk.size);
-                status.value.uploadedBytes += loaded - prevLoaded;
-                prevLoaded = loaded;
+    let finished = false;
+    while (!finished) {
+        try {
+            res = await axios.post(url, data, {
+                onUploadProgress: function (event) {
+                    // for small files on fast internet otherwise overshoots
+                    let loaded = Math.min(event.loaded, chunk.size);
+                    status.value.uploadedBytes += loaded - prevLoaded;
+                    prevLoaded = loaded;
+                }
+            });
+            finished = true;
+        } catch (err) {
+            console.log("Failed to upload chunk retrying...");
+            console.log(err);
+            if (err.response.data) {
+                console.log(err.response.data);
             }
-        });
-    } catch (err) {
-        throw Error(err.response.data.error)
+            //throw Error(err.response.data.error)
+        }
     }
     if (res == null)
         throw Error("Failed to get a response");
     const json = res.data;
     status.value.location[index] = json.location;
+    return place;
 }
 
 /**
@@ -47,11 +57,26 @@ const uploadChunkedWithStatus = async (file, url, status) => {
     let cnt = 1;
     let start = 0;
     let end = 0;
+    let pushCnt = 0;
     let promises = [];
+
     while (end < file.size) {
         end = Math.min(chunkSize * cnt, file.size)
         const chunk = file.slice(start, end);
-        promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1));
+        let completed = null;
+        // this is a promise loop only 10 promises at a time can be active
+        // otherwise if the file is too big 
+        // without this limitation the server will run out of memory and crash
+        if (promises.length >= 10) {
+            completed = await Promise.any(promises);
+        }
+        console.log(promises);
+        if (completed != null) {
+            promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed);
+        } else {
+            promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushCnt));
+            pushCnt++;
+        }
         start = end;
         cnt++;
     }

@@ -23,50 +23,70 @@ function downloadFile(file) {
     window.URL.revokeObjectURL(url)
 }
 
-export async function downloadWithStatus(filename, urls, size, status) {
-    let blobs = [];
-    let receivedLength = 0; // received that many bytes at the moment
-
-    await Promise.all(urls.map(async (w, index) => {
-        let res;
-        res = await fetch(proxy + w, {
+async function downloadChunk(url, urlIndex, status, size, received, promiseIndex, blobs) {
+    let res = await fetch(proxy + url, {
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    });
+    while (!res.ok) {
+        console.log("failed to fetch retrying in 3 seconds")
+        await new Promise(r => setTimeout(r, 3000));
+        res = await fetch(proxy + urls[index], {
             headers: {
                 "X-Requested-With": "XMLHttpRequest"
             }
         });
-        while (!res.ok) {
-            console.log("failed to fetch retrying in 3 seconds")
-            await new Promise(r => setTimeout(r, 3000));
-            res = await fetch(proxy + urls[i], {
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            });
+    }
+
+    const reader = res.body.getReader();
+
+    let chunks = [];
+
+    while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+            break;
         }
 
-        const reader = res.body.getReader();
+        chunks.push(value);
+        received.size += value.length;
 
-        let chunks = [];
+        status.value.msg = `Download progress: ${Math.round(received.size / size * 10000) / 100}%`;
+        status.value.downloadedBytes = received.size;
+    }
 
-        while (true) {
-            const { done, value } = await reader.read();
+    blobs[urlIndex] = new Blob(chunks);
+    return promiseIndex;
+}
 
-            if (done) {
-                break;
-            }
+export async function downloadWithStatus(filename, urls, size, status) {
+    let blobs = [];
+    let received = { size: 0 }; // received that many bytes at the moment
 
-            chunks.push(value);
-            receivedLength += value.length;
-
-            status.value.msg = `Download progress: ${Math.round(receivedLength / size * 10000) / 100}%`;
-            status.value.downloadedBytes = receivedLength;
+    let promises = [];
+    let pushCnt = 0;
+    let prevSize = 0;
+    let interval = setInterval(() => {
+        const diff = (received.size - prevSize) * 4;
+        prevSize = received.size;
+        status.value.speed = toReadable(diff)+"/s";
+    }, 250);
+    for (let c = 0; c < urls.length; c++) {
+        let completed = null;
+        if (promises.length >= 10) {
+            completed = await Promise.any(promises);
+        } else {
+            promises.push(downloadChunk(urls[c], c, status, size, received, pushCnt, blobs));
+            pushCnt++;
         }
-
-        const blob = new Blob(chunks);
-        blobs[index] = blob;
-
-    }));
-
+        if (completed != null) {
+            promises[completed] = downloadChunk(urls[c], c, status, size, received, completed, blobs);
+        }
+    }
+    await Promise.all(promises);
+    clearInterval(interval);
     if (blobs.length > 0) {
         let file = new File(blobs, filename)
         status.value.finished = true;

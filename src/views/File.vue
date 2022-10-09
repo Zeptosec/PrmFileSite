@@ -1,6 +1,6 @@
 <template>
     <main>
-        <div>
+        <div class="main">
             <h1>{{data.msg}}</h1>
             <div v-if="filedata">
                 <h3>name: {{filedata.name}}</h3>
@@ -10,6 +10,7 @@
             <div v-if="status.downloading">
                 <h2>{{status.msg}}</h2>
                 <h3>{{toReadable(status.downloadedBytes)}} / {{filedata.readableSize}}</h3>
+                <h4>Speed: {{status.speed}}</h4>
             </div>
         </div>
     </main>
@@ -51,7 +52,6 @@ onMounted(async () => {
         json.data[0].readableSize = toReadable(json.data[0].size);
         filedata.value = json.data[0];
 
-        console.log(filedata.value);
         if (!filedata.value) {
             data.value.msg = "File was not found";
         } else {
@@ -65,5 +65,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
+.main {
+    background-color: #fff3;
+    padding-bottom: 21px;
+}
 </style>

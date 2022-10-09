@@ -6,6 +6,8 @@ import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
 import { supabase } from '../supabase';
 import { objectToString } from '@vue/shared';
+import FileTable from '../components/FileTable.vue';
+import { toReadable } from '../compositions/filedownloader';
 const { files, addFiles, removeFile } = useFileList();
 const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.glitch.me";
 const isUploading = ref(false);
@@ -70,9 +72,9 @@ async function upload() {
       if (data) {
         for (let i = 0; i < data.length; i++) {
           if (data[i].fileid) {
-            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name });
+            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name, size: data[i].size });
           } else {
-            urls.push({ location: data[i].chunks[0], name: data[i].name });
+            urls.push({ location: data[i].chunks[0], name: data[i].name, size: data[i].size });
           }
         }
       }
@@ -82,7 +84,7 @@ async function upload() {
       for (let i = filesFrom; i < filesTo; i++) {
         let f = status.value.files[i].value;
         if (f.error) continue;
-        downloadLinks.value.push({ location: f.location[0], name: f.name });
+        downloadLinks.value.push({ location: f.location[0], name: f.name, size: f.size });
       }
     }
     files.value = [];
@@ -135,11 +137,12 @@ async function upload() {
           </tr>
         </table>
       </div>
-      <ul>
+      <FileTable :files="downloadLinks" />
+      <!-- <ul>
         <li v-for="(link, ind) in downloadLinks" :key="ind">
           <p><a :href="link.location">{{link.name}}</a></p>
         </li>
-      </ul>
+      </ul> -->
     </div>
   </main>
 </template>
@@ -189,7 +192,7 @@ ul {
   flex-wrap: wrap;
 }
 
-.file-list > * {
+.file-list>* {
   flex: 1 1 160px;
 }
 
