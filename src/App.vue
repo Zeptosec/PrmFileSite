@@ -119,6 +119,7 @@ html {
   height: 100%;
   width: 100%;
   background-color: #b6d6f5;
+  animation: parallax 5s linear infinite;
   background-blend-mode: multiply;
   background-image: repeating-linear-gradient(var(--rotation),
       var(--color1) calc(var(--size) * 0),
@@ -132,6 +133,16 @@ html {
       var(--color2) calc(var(--size) * 9),
       var(--color2) calc(var(--size) * 12),
       var(--color1) calc(var(--size) * 12));
+}
+
+@keyframes parallax {
+  0% {
+    background-position: 0px 0px;
+  }
+
+  100% {
+    background-position: 0px 170px;
+  }
 }
 
 main {
