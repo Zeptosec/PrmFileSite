@@ -1,4 +1,4 @@
-const proxy = "https://crsfr.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
+const proxy = "https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
 
 export function toReadable(size) {
     let cnt = 0;
