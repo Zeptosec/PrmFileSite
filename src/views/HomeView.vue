@@ -37,9 +37,15 @@ async function savObjsToDB(objs, table) {
   return data;
 }
 
+const beforeUnloadListener = (event) => {
+  event.preventDefault();
+  return event.returnValue = "Are you sure you want to leave?";
+};
+
 async function upload() {
   isUploading.value = true;
   errMsg.value = "Waking up the server...";
+  addEventListener("beforeunload", beforeUnloadListener, {capture: true});
   try {
     let res = await fetch(apiEndPoint);
     if (res.ok) {
@@ -91,6 +97,7 @@ async function upload() {
     console.log(err);
     errMsg.value = err.message;
   } finally {
+    removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
     isUploading.value = false;
   }
 }

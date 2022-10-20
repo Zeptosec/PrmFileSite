@@ -1,4 +1,4 @@
-const proxy = "https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
+const proxy = "https://thecrsman.onrender.com/";//"https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
 
 export function toReadable(size) {
     let cnt = 0;
@@ -24,21 +24,23 @@ function downloadFile(file) {
 }
 
 async function downloadChunk(url, urlIndex, status, size, received, promiseIndex, blobs) {
-    let res = await fetch(proxy + url, {
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
+    let res = null;
+    let gotRes = false;
+    while (!gotRes) {
+        try {
+            res = await fetch(proxy + url, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            gotRes = true;
+        } catch (err) {
+            console.log(err);
+            gotRes = false;
+            console.log("failed to fetch retrying in 3 seconds")
+            await new Promise(r => setTimeout(r, 3000));
         }
-    });
-    while (!res.ok) {
-        console.log("failed to fetch retrying in 3 seconds")
-        await new Promise(r => setTimeout(r, 3000));
-        res = await fetch(proxy + urls[index], {
-            headers: {
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
     }
-
     const reader = res.body.getReader();
 
     let chunks = [];
@@ -71,7 +73,7 @@ export async function downloadWithStatus(filename, urls, size, status) {
     let interval = setInterval(() => {
         const diff = (received.size - prevSize) * 4;
         prevSize = received.size;
-        status.value.speed = toReadable(diff)+"/s";
+        status.value.speed = toReadable(diff) + "/s";
     }, 250);
     for (let c = 0; c < urls.length; c++) {
         let completed = null;

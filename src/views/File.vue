@@ -18,7 +18,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router';
 import { downloadWithStatus, toReadable } from '../compositions/filedownloader';
 
 const route = useRoute();
@@ -26,16 +26,24 @@ const data = ref({ msg: "Please wait fetching details...", found: false });
 const status = ref({ msg: "", finished: false, downloading: false, downloadedBytes: 0 });
 const filedata = ref(null);
 
+const beforeUnloadListener = (event) => {
+  event.preventDefault();
+  return event.returnValue = "Are you sure you want to leave?";
+};
+
 async function startDownload() {
     data.value.msg = "Starting the download.";
     status.value.downloading = true;
     status.value.msg = "Waking up the server...";
+    addEventListener("beforeunload", beforeUnloadListener, {capture: true});
     try {
         await downloadWithStatus(filedata.value.name, filedata.value.chunks, filedata.value.size, status);
         //await download(filedata.name, filedata.chunks);
     } catch (err) {
         console.log(err);
         data.value.msg = "Download failed. " + err.message;
+    } finally {
+        removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
     }
 }
 
