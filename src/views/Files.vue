@@ -2,7 +2,7 @@
     <main>
         <FileTable v-if="files.length > 0" :files="files" />
         <div v-else>
-            <h2>{{msg}}</h2>
+            <h2>{{ msg }}</h2>
         </div>
     </main>
 </template>
@@ -12,6 +12,7 @@ import { onMounted, ref } from 'vue';
 import { supabase } from '../supabase';
 import { chunkSize } from '../compositions/fileuploader';
 import FileTable from '../components/FileTable.vue';
+import { getLinkFromFile } from '../compositions/filedownloader';
 
 const msg = ref("Fething files...");
 const files = ref([])
@@ -37,7 +38,7 @@ onMounted(async () => {
         if (data[i].size > chunkSize) {
             lnk = "/file/" + data[i].fileid;
         } else {
-            lnk = data[i].chunks[0];
+            lnk = getLinkFromFile({ location: data[i].chunks[0], name: data[i].name });
             direct = true;
         }
         tmp.push({
@@ -53,7 +54,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
 h2 {
     margin: 0px;
     padding: 15px 0;

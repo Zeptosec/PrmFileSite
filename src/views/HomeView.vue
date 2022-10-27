@@ -6,6 +6,7 @@ import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
 import { supabase } from '../supabase';
 import FileTable from '../components/FileTable.vue';
+import { getIdFromLink } from '../compositions/filedownloader';
 const { files, addFiles, removeFile } = useFileList();
 const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.glitch.me";
 const isUploading = ref(false);
@@ -62,9 +63,9 @@ async function upload() {
         let f = status.value.files[i].value;
         if (f.error) continue;
         if (f.size > chunkSize) {
-          objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size });
+          objs.push({ name: f.name, chunks: getIdFromLink(f.location), userid: props.theUser.id, size: f.size });
         } else {
-          objs.push({ name: f.name, chunks: f.location, userid: props.theUser.id, size: f.size, fileid: null });
+          objs.push({ name: f.name, chunks: getIdFromLink(f.location), userid: props.theUser.id, size: f.size, fileid: null });
         }
       }
       // console.log("objs");

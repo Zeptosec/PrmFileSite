@@ -16,7 +16,7 @@
                     <th>Size</th>
                 </thead>
                 <tr v-for="(file, ind) in files" :key="ind" class="pointer"
-                    @click="clickRow(file.location, file.size)"
+                    @click="clickRow(file)"
                     @contextmenu="rightClickCopy($event, file.location, file.size)">
                     <td>{{ind+1}}</td>
                     <td>{{file.name}}</td>
@@ -31,6 +31,7 @@
 import { ref } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
+import { getLinkFromFile } from '../compositions/filedownloader';
 import router from '../router';
 const display = ref("none");
 const position = ref({ x: 0, y: 0 });
@@ -63,13 +64,12 @@ function rightClickCopy(event, loc, size) {
     }, 500)
 }
 
-function clickRow(loc, size) {
-    console.log(loc);
-    if (size <= chunkSize) {
+function clickRow(file) {
+    if (file.size <= chunkSize) {
 
-        window.open(loc, '_blank');
+        window.open(getLinkFromFile(file), '_blank');
     } else {
-        let routeData = router.resolve(loc);
+        let routeData = router.resolve(getLinkFromFile(file));
         window.open(routeData.href, '_blank');
     }
 }

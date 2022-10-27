@@ -1,5 +1,16 @@
 const proxy = "https://thecrsman.onrender.com/";//"https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
 
+export function getIdFromLink(links){
+    let rs = links.map(w => w.split('/')[5]);
+    return rs;
+}
+
+export function getLinkFromFile(file){
+    if(file.location.length > 30) return file.location;
+    const link = `https://cdn.discordapp.com/attachments/1025526944776867952/${file.location}/${file.name}`;
+    return link;
+}
+
 export function toReadable(size) {
     let cnt = 0;
     while (size / 1024 > 1) {
@@ -28,7 +39,9 @@ async function downloadChunk(url, urlIndex, status, size, received, promiseIndex
     let gotRes = false;
     while (!gotRes) {
         try {
-            res = await fetch(proxy + url, {
+            const builtURL = getLinkFromFile({ location: url, name: "blob" })
+            console.log(url)
+            res = await fetch(proxy + builtURL, {
                 headers: {
                     "X-Requested-With": "XMLHttpRequest"
                 }
