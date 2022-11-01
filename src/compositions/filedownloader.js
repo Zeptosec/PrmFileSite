@@ -1,4 +1,6 @@
-const proxy = "https://thecrsman.onrender.com/";//"https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
+const proxy = "https://frxcr-zeptosec.koyeb.app/";//"https://thecrsman.onrender.com/";//"https://web-production-842b.up.railway.app/";//https://thecrsman.onrender.com/";//"https://anywhrcrs.azurewebsites.net/";
+const proxies = ['https://frxcr-zeptosec.koyeb.app/',
+'https://thecrsman.onrender.com/'];
 
 export function getIdFromLink(links){
     let rs = links.map(w => w.split('/')[5]);
@@ -37,17 +39,19 @@ function downloadFile(file) {
 async function downloadChunk(url, urlIndex, status, size, received, promiseIndex, blobs) {
     let res = null;
     let gotRes = false;
+    let ind = 0;
     while (!gotRes) {
         try {
             const builtURL = getLinkFromFile({ location: url, name: "blob" })
-            console.log(url)
-            res = await fetch(proxy + builtURL, {
+            //console.log(url)
+            res = await fetch(proxies[ind] + builtURL, {
                 headers: {
                     "X-Requested-With": "XMLHttpRequest"
                 }
             });
             gotRes = true;
         } catch (err) {
+            ind = (ind + 1) % proxies.length;
             console.log(err);
             gotRes = false;
             console.log("failed to fetch retrying in 3 seconds")
