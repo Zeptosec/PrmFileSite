@@ -14,7 +14,7 @@
             </div>
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
                 <button v-if="!status.fileurl" @click="prepareWatch">Watch</button>
-                <video v-if="status.fileurl" :src="status.fileurl" width="600" controls></video>
+                <video v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" controls></video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
@@ -24,7 +24,7 @@
 
             <div v-if="filedata && imageExts.includes(filedata.ext)" class="watch">
                 <button v-if="!status.fileurl" @click="prepareWatch">Preview</button>
-                <img v-if="status.fileurl" :src="status.fileurl" width="600" alt="preview image" />
+                <img v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" alt="preview image" />
             </div>
         </div>
     </main>
@@ -42,6 +42,12 @@ const filedata = ref(null);
 const videoExts = ref(['mp4', 'wav']);
 const audioExts = ref(['mp3', 'ogg']);
 const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
+
+const getWidth = () => {
+    const val = Math.min(600, Math.round(window.innerWidth * .9));
+    console.log(val);
+    return val;
+}
 
 const prepareWatch = async () => {
     await startDownload(false);
