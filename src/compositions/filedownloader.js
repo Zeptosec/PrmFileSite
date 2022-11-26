@@ -23,14 +23,23 @@ export function toReadable(size) {
     return `${Math.round(size * 100) / 100} ${sizes[cnt]}`;
 }
 
-function downloadFile(file) {
-    const link = document.createElement('a')
+function getDownloadUrl(file){
     const url = URL.createObjectURL(file)
+    return url;
+}
 
-    link.href = url
-    link.download = file.name
-    document.body.appendChild(link)
-    link.click()
+function downloadFile(file) {
+    const url = getDownloadUrl(file)
+    downloadFileUrl(file.name, url);
+}
+
+export function downloadFileUrl(name, url){
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
 
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
@@ -80,7 +89,7 @@ async function downloadChunk(url, urlIndex, status, size, received, promiseIndex
     return promiseIndex;
 }
 
-export async function downloadWithStatus(filename, urls, size, status) {
+export async function downloadWithStatus(filename, urls, size, status, isDownload = true) {
     let blobs = [];
     let received = { size: 0 }; // received that many bytes at the moment
 
@@ -110,7 +119,9 @@ export async function downloadWithStatus(filename, urls, size, status) {
         let file = new File(blobs, filename)
         status.value.finished = true;
         status.value.msg = "Download Complete";
-        downloadFile(file);
+        status.value.fileurl = getDownloadUrl(file);
+        if(isDownload)
+            downloadFile(file);
     } else {
         status.value = "Failed to download"
     }
