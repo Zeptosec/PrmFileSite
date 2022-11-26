@@ -12,9 +12,19 @@
                 <h3>{{ toReadable(status.downloadedBytes) }} / {{ filedata.readableSize }}</h3>
                 <h4>Speed: {{ status.speed }}</h4>
             </div>
-            <div class="watch">
-                <button v-if="filedata && videoExts.includes(filedata.ext) && !status.fileurl" @click="prepareWatch">Watch</button>
+            <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
+                <button v-if="!status.fileurl" @click="prepareWatch">Watch</button>
                 <video v-if="status.fileurl" :src="status.fileurl" width="600" controls></video>
+            </div>
+
+            <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
+                <button v-if="!status.fileurl" @click="prepareWatch">Listen</button>
+                <audio v-if="status.fileurl" :src="status.fileurl" controls></audio>
+            </div>
+
+            <div v-if="filedata && imageExts.includes(filedata.ext)" class="watch">
+                <button v-if="!status.fileurl" @click="prepareWatch">Preview</button>
+                <img v-if="status.fileurl" :src="status.fileurl" width="600" alt="preview image" />
             </div>
         </div>
     </main>
@@ -30,6 +40,8 @@ const data = ref({ msg: "Please wait fetching details...", found: false });
 const status = ref({ msg: "", finished: false, downloading: false, downloadedBytes: 0, fileurl: null });
 const filedata = ref(null);
 const videoExts = ref(['mp4', 'wav']);
+const audioExts = ref(['mp3', 'ogg']);
+const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
 
 const prepareWatch = async () => {
     await startDownload(false);
