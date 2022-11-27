@@ -39,8 +39,8 @@ const route = useRoute();
 const data = ref({ msg: "Please wait fetching details...", found: false });
 const status = ref({ msg: "", finished: false, downloading: false, downloadedBytes: 0, fileurl: null });
 const filedata = ref(null);
-const videoExts = ref(['mp4', 'wav']);
-const audioExts = ref(['mp3', 'ogg']);
+const videoExts = ref(['mp4']);
+const audioExts = ref(['mp3', 'ogg', 'wav']);
 const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
 
 const getWidth = () => {
