@@ -13,17 +13,17 @@
                 <h4>Speed: {{ status.speed }}</h4>
             </div>
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
-                <button v-if="!status.fileurl" @click="prepareWatch">Watch</button>
+                <button v-if="!status.fileurl" @click="prepareWatch" :disabled="status.downloading">Watch</button>
                 <video v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" controls></video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
-                <button v-if="!status.fileurl" @click="prepareWatch">Listen</button>
+                <button v-if="!status.fileurl" @click="prepareWatch" :disabled="status.downloading">Listen</button>
                 <audio v-if="status.fileurl" :src="status.fileurl" controls></audio>
             </div>
 
             <div v-if="filedata && imageExts.includes(filedata.ext)" class="watch">
-                <button v-if="!status.fileurl" @click="prepareWatch">Preview</button>
+                <button v-if="!status.fileurl" @click="prepareWatch" :disabled="status.downloading">Preview</button>
                 <img v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" alt="preview image" />
             </div>
         </div>
