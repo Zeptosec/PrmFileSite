@@ -39,6 +39,7 @@ const timeout = ref();
 
 const props = defineProps({
     files: { type: Array, required: true },
+    Showfolders: { type: Boolean }
 });
 
 function rightClickCopy(event, loc, size) {

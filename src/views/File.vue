@@ -13,8 +13,8 @@
                 <h4>Speed: {{ status.speed }}</h4>
             </div>
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
-                <button v-if="!status.fileurl" @click="prepareWatch" :disabled="status.downloading">Watch</button>
-                <video v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" controls></video>
+                <button v-if="!clickedWatch" @click="() => clickedWatch = true" :disabled="status.downloading">Watch</button>
+                <video v-if="clickedWatch" :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" :width="getWidth()" controls></video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
@@ -42,6 +42,7 @@ const filedata = ref(null);
 const videoExts = ref(['mp4']);
 const audioExts = ref(['mp3', 'ogg', 'wav']);
 const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
+const clickedWatch = ref(false);
 
 const getWidth = () => {
     const val = Math.min(600, Math.round(window.innerWidth * .9));
