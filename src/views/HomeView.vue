@@ -70,6 +70,9 @@ async function upload() {
       }
       // console.log("objs");
       // console.log(objs);
+      if(objs.length == 0){
+        throw Error("Failed to upload");
+      }
       const data = await savObjsToDB(objs, 'Files')
       // console.log("Data");
       // console.log(data);

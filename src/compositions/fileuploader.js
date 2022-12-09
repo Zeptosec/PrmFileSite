@@ -1,4 +1,3 @@
-import { supabase } from '../supabase';
 import { ref } from 'vue';
 import axios from 'axios'
 
@@ -37,6 +36,7 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
             if (err.response.data) {
                 console.log(err.response.data);
             }
+            await new Promise(r => setTimeout(r, 3000));
             //throw Error(err.response.data.error)
         }
     }
@@ -91,13 +91,13 @@ const uploadChunkedWithStatus = async (file, url, status) => {
 const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
     if (!file) return;
 
-    status.value = {
-        name: file.name,
-        size: file.size,
-        uploadedBytes: 0,
-        location: [],
-        finished: false,
-    }
+    // status.value = {
+    //     name: file.name,
+    //     size: file.size,
+    //     uploadedBytes: 0,
+    //     location: [],
+    //     finished: false,
+    // }
 
     if (file.size > chunkSize) {
         if (!isLoggedIn) {
@@ -120,17 +120,41 @@ export const uploadFilesWithStatus = async (files, url, isLoggedIn, status) => {
     if (files == null) return;
     // when im not lazy would be a good idea to add typescript
     status.value.finished = false;
-    await Promise.all(
-        files.map(async file => {
-            const fstatus = ref();
-            status.value.files.push(fstatus);
-            try {
-                await uploadFileWithStatus(file.file, url, isLoggedIn, fstatus)
-            } catch (err) {
-                fstatus.value.error = err.message;
-                status.value.hasErrors = true;
-            }
-        })
-    )
+    // upload one file at the time because problems happen when there are too many files
+    let fstatusArr = [];
+    for(let i = 0; i < files.length; i++){
+        const fstatus = ref({
+            name: files[i].file.name,
+            size: files[i].file.size,
+            uploadedBytes: 0,
+            location: [],
+            finished: false,
+        });
+        status.value.files.push(fstatus);
+        fstatusArr.push(fstatus);
+    }
+    
+    for(let i = 0; i < files.length; i++){
+        try {
+            await uploadFileWithStatus(files[i].file, url, isLoggedIn, fstatusArr[i])
+            console.log("file " + files[i].file.name);
+        } catch (err) {
+            fstatusArr[i].value.error = err.message;
+            status.value.hasErrors = true;
+        }
+    }
+
+    // await Promise.all(
+    //     files.map(async file => {
+    //         const fstatus = ref();
+    //         status.value.files.push(fstatus);
+    //         try {
+    //             await uploadFileWithStatus(file.file, url, isLoggedIn, fstatus)
+    //         } catch (err) {
+    //             fstatus.value.error = err.message;
+    //             status.value.hasErrors = true;
+    //         }
+    //     })
+    // )
     status.value.finished = true;
 }
