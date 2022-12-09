@@ -1,6 +1,6 @@
 <template>
     <main>
-        <FileTable v-if="files.length > 0" :files="files" />
+        <LoginFileTable v-if="files.length > 0" :files="files" />
         <div v-else>
             <h2>{{ msg }}</h2>
         </div>
@@ -11,16 +11,23 @@
 import { onMounted, ref } from 'vue';
 import { supabase } from '../supabase';
 import { chunkSize } from '../compositions/fileuploader';
-import FileTable from '../components/FileTable.vue';
 import { getLinkFromFile } from '../compositions/filedownloader';
+import LoginFileTable from '../components/LoginFileTable.vue';
 
 const msg = ref("Fething files...");
-const files = ref([])
+const files = ref([]);
+
+function getFileIDFromUID(searchFiles, fileuid){
+    if(!fileuid) return "";
+    const val = searchFiles.find(w => w.fileid === fileuid);
+    if(val) return val.id;
+    else return "";
+}
 
 onMounted(async () => {
     const { data, error } = await supabase
         .from('Files')
-        .select('*')
+        .select('id, size, chunks, name, fileid, path, previous, next')
         .order('created_at', { ascending: false });
     if (error) {
         msg.value = error;
@@ -41,11 +48,16 @@ onMounted(async () => {
             lnk = getLinkFromFile({ location: data[i].chunks[0], name: data[i].name });
             direct = true;
         }
+       
         tmp.push({
             location: lnk,
             name: data[i].name,
             size: data[i].size,
-            direct
+            direct,
+            id: data[i].id,
+            fileid: data[i].fileid,
+            next: getFileIDFromUID(data, data[i].next),
+            previous: getFileIDFromUID(data, data[i].previous)
         });
     }
     files.value = tmp;

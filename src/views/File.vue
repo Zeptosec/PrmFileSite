@@ -13,8 +13,12 @@
                 <h4>Speed: {{ status.speed }}</h4>
             </div>
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
-                <button v-if="!clickedWatch" @click="() => clickedWatch = true" :disabled="status.downloading">Watch</button>
-                <video v-if="clickedWatch" :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" :width="getWidth()" controls></video>
+                <button v-if="!clickedWatch" @click="() => clickedWatch = true"
+                    :disabled="status.downloading">Watch</button>
+                <video ref="vtag"
+                    @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
+                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" :width="getWidth()"
+                    controls></video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
@@ -26,6 +30,11 @@
                 <button v-if="!status.fileurl" @click="prepareWatch" :disabled="status.downloading">Preview</button>
                 <img v-if="status.fileurl" :src="status.fileurl" :width="getWidth()" alt="preview image" />
             </div>
+
+            <div v-if="filedata && (filedata.previous || filedata.next)" class="row">
+                <button v-if="filedata.previous" @click="gotoLinkFromUID(filedata.previous)">Previous</button>
+                <button v-if="filedata.next" @click="gotoLinkFromUID(filedata.next)">Next</button>
+            </div>
         </div>
     </main>
 </template>
@@ -34,6 +43,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { downloadWithStatus, toReadable, downloadFileUrl } from '../compositions/filedownloader';
+import router from '../router';
 
 const route = useRoute();
 const data = ref({ msg: "Please wait fetching details...", found: false });
@@ -43,6 +53,21 @@ const videoExts = ref(['mp4']);
 const audioExts = ref(['mp3', 'ogg', 'wav']);
 const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
 const clickedWatch = ref(false);
+let vtag = ref(null);
+
+window.onunload = function () {
+    if (vtag.value) {
+        localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
+    }
+}
+
+const loadedVideo = (uid) => {
+    const val = localStorage.getItem(uid);
+    if (val) {
+        vtag.value.currentTime = val;
+    }
+    console.log(filedata.value);
+}
 
 const getWidth = () => {
     const val = Math.min(600, Math.round(window.innerWidth * .9));
@@ -60,10 +85,16 @@ const beforeUnloadListener = (event) => {
     return event.returnValue = "Are you sure you want to leave?";
 };
 
+function gotoLinkFromUID(uid) {
+    router.push(`/file/${uid}`);
+    clickedWatch.value = false;
+    fetchFiles(uid);
+}
+
 async function startDownload(isDownload = true) {
     data.value.msg = "Starting the download.";
     status.value.downloading = true;
-    if(status.value.fileurl != null){
+    if (status.value.fileurl != null) {
         downloadFileUrl(filedata.value.name, status.value.fileurl);
         data.value.msg = "Done";
         return;
@@ -81,9 +112,13 @@ async function startDownload(isDownload = true) {
     }
 }
 
-onMounted(async () => {
+async function fetchFiles(newid = null) {
+    status.value = { msg: "", finished: false, downloading: false, downloadedBytes: 0, fileurl: null };
+    data.value = { msg: "Please wait fetching details...", found: false };
+    filedata.value = null;
     // fetch links and download using filedownloader
-    const id = route.params.id;
+    let id = route.params.id;
+    if (newid) id = newid;
     if (!id) {
         data.value.msg = "No id was found in a query";
         return;
@@ -103,13 +138,27 @@ onMounted(async () => {
     } else {
         data.value.msg = json.error;
     }
-})
+}
+
+onMounted(fetchFiles)
 </script>
 
 <style scoped>
+.row {
+    display: flex;
+    align-items: middle;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
 .watch {
     margin-top: 8px;
 }
+video {
+    width: 60%;
+}
+
 .main {
     background-color: #fff3;
     padding-bottom: 21px;
