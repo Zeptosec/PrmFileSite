@@ -65,8 +65,8 @@ const uploadChunkedWithStatus = async (file, url, status) => {
         // this is a promise loop only 10 promises at a time can be active
         // otherwise if the file is too big 
         // without this limitation the server will run out of memory and crash
-
-        if (promises.length >= 10) {
+        console.log(promises.length)
+        if (promises.length >= 15) {
             completed = await Promise.any(promises);
             promises.splice(completed, 1);
             end = Math.min(chunkSize * cnt, file.size)
