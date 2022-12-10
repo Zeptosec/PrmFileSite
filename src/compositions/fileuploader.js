@@ -47,59 +47,68 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
 }
 
 let promises = [];
-let pushCnt = 0;
-let reserveLock = false;
+let pendingReserve = false;
+
 /**
  * 
+ * @param {string} url URL to api end point with reserving logic 
+ * @returns Object with index of completed promise can be null if didint check, and success for reserving spot on server
+ */
+const getReserve = async (url) => {
+    let completed = null;
+    if(pendingReserve){
+        return { completed, success: false };
+    }
+    pendingReserve = true;
+    if (promises.length >= 15) {
+        completed = await Promise.any(promises);
+    }
+    let res;
+    try {
+        res = await axios.get(url);
+    } catch (err) {
+        console.log(err);
+        setTimeout(() => pendingReserve = false, 1000);
+        return { completed, success: false };
+    }
+    if (res.status != 202) {
+        setTimeout(() => pendingReserve = false, 1000);
+        return { completed, success: false };
+    }
+    pendingReserve = false;
+    return { completed, success: true };
+}
+
+/**
+ * Uploads file by cutting it to chunks and saving to server
  * @param {File} file File that will be split into largest chunks and uploaded.
  * @param {string} url api end point to upload to.
  * @param {Object} status ref to status for storing information about upload
  */
-const uploadChunkedWithStatus = async (file, url, status) => {
+const uploadChunkedWithStatus2 = async (file, url, status) => {
     let cnt = 1;
     let start = 0;
     let end = 0;
-    let completed = null;
-    let chunk = null;
+    const resUrl = `${url.slice(0, url.lastIndexOf("/"))}/reserve`;
     while (end < file.size) {
-        // this is a promise loop only 10 promises at a time can be active
-        // otherwise if the file is too big 
-        // without this limitation the server will run out of memory and crash
-        console.log(promises.length)
-        if (promises.length >= 15) {
-            completed = await Promise.any(promises);
-            promises.splice(completed, 1);
-            end = Math.min(chunkSize * cnt, file.size)
-            chunk = file.slice(start, end);
-        }
-
-        // lock for one file chunk reserve at the time
-        if (reserveLock) {
-            await new Promise(r => setTimeout(r, 1500));
+        // get reserve
+        const { completed, success } = await getReserve(resUrl);
+        if (!success) {
+            await new Promise(r => setTimeout(r, 500));
             continue;
         }
-        reserveLock = true;
-        // past this point reserving one file chunk
-        const reserveRes = await axios.get(`${url.slice(0, url.lastIndexOf("/"))}/reserve`);
-        if (reserveRes.status != 202) {
-            // failed to reserve waiting and will try again..
-            await new Promise(r => setTimeout(r, 10000));
-            reserveLock = false;
-            continue;
-        }
-        // place for this chunk was reserved releasing lock
-        reserveLock = false;
-
-        // starting upload
-        if (completed != null) {
+        //console.log(promises.length);
+        // logic for uploading
+        end = Math.min(chunkSize * cnt, file.size)
+        const chunk = file.slice(start, end);
+        //console.log(`${file.name} got reserve ${start} - ${end} | comp: ${completed}`);
+        if(completed != null){
             promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed);
-            console.log(`completed ${file.name} - ${completed}`);
+        } else if (promises.length < 15) {
+            const pushInd = promises.length;
+            promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushInd));
         } else {
-            end = Math.min(chunkSize * cnt, file.size)
-            chunk = file.slice(start, end);
-            promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushCnt));
-            pushCnt++;
-            console.log(`added ${file.name} - ${pushCnt}`);
+            throw Error("Somehow completed promises got lost???");
         }
         start = end;
         cnt++;
@@ -128,7 +137,8 @@ const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
         if (!isLoggedIn) {
             throw Error("File is too large. To upload file larger than 8 MB please login.");
         }
-        await uploadChunkedWithStatus(file, url, status);
+        await uploadChunkedWithStatus2(file, url, status);
+        //throw Error("This is tmp error will be removed");
     } else {
         await uploadChunkWithStatus(file, url, status, 0);
     }
