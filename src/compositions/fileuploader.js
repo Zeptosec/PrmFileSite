@@ -21,6 +21,11 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     let finished = false;
     while (!finished) {
         try {
+            const reserveRes = await axios.get(`${url.slice(0, url.lastIndexOf("/"))}/reserve`);
+            if(reserveRes.status != 202){
+                await new Promise(r => setTimeout(r, 10000));
+                continue;
+            }
             res = await axios.post(url, data, {
                 onUploadProgress: function (event) {
                     // for small files on fast internet otherwise overshoots
@@ -91,13 +96,13 @@ const uploadChunkedWithStatus = async (file, url, status) => {
 const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
     if (!file) return;
 
-    // status.value = {
-    //     name: file.name,
-    //     size: file.size,
-    //     uploadedBytes: 0,
-    //     location: [],
-    //     finished: false,
-    // }
+    status.value = {
+        name: file.name,
+        size: file.size,
+        uploadedBytes: 0,
+        location: [],
+        finished: false,
+    }
 
     if (file.size > chunkSize) {
         if (!isLoggedIn) {
@@ -121,40 +126,18 @@ export const uploadFilesWithStatus = async (files, url, isLoggedIn, status) => {
     // when im not lazy would be a good idea to add typescript
     status.value.finished = false;
     // upload one file at the time because problems happen when there are too many files
-    let fstatusArr = [];
-    for(let i = 0; i < files.length; i++){
-        const fstatus = ref({
-            name: files[i].file.name,
-            size: files[i].file.size,
-            uploadedBytes: 0,
-            location: [],
-            finished: false,
-        });
-        status.value.files.push(fstatus);
-        fstatusArr.push(fstatus);
-    }
-    
-    for(let i = 0; i < files.length; i++){
-        try {
-            await uploadFileWithStatus(files[i].file, url, isLoggedIn, fstatusArr[i])
-            console.log("file " + files[i].file.name);
-        } catch (err) {
-            fstatusArr[i].value.error = err.message;
-            status.value.hasErrors = true;
-        }
-    }
 
-    // await Promise.all(
-    //     files.map(async file => {
-    //         const fstatus = ref();
-    //         status.value.files.push(fstatus);
-    //         try {
-    //             await uploadFileWithStatus(file.file, url, isLoggedIn, fstatus)
-    //         } catch (err) {
-    //             fstatus.value.error = err.message;
-    //             status.value.hasErrors = true;
-    //         }
-    //     })
-    // )
+    await Promise.all(
+        files.map(async file => {
+            const fstatus = ref();
+            status.value.files.push(fstatus);
+            try {
+                await uploadFileWithStatus(file.file, url, isLoggedIn, fstatus)
+            } catch (err) {
+                fstatus.value.error = err.message;
+                status.value.hasErrors = true;
+            }
+        })
+    )
     status.value.finished = true;
 }

@@ -15,8 +15,7 @@
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
                 <button v-if="!clickedWatch" @click="() => clickedWatch = true"
                     :disabled="status.downloading">Watch</button>
-                <video ref="vtag"
-                    @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
+                <video ref="vtag" @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
                     :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" :width="getWidth()"
                     controls></video>
             </div>
@@ -155,8 +154,21 @@ onMounted(fetchFiles)
 .watch {
     margin-top: 8px;
 }
+
 video {
-    width: 60%;
+    width: 70%;
+}
+
+@media only screen and (max-width: 900px) {
+    video {
+        width: 80%;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    video {
+        width: 90%;
+    }
 }
 
 .main {
