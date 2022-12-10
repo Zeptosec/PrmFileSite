@@ -1,5 +1,5 @@
 <template>
-    <div class="filetable">
+    <div>
         <Teleport to="#app">
             <div class="cp-info" @contextmenu="e => e.preventDefault()"
                 :style="{ 'position': 'absolute', 'display': display, 'top': position.y+ 'px', 'left': position.x+'px' }">
@@ -22,12 +22,13 @@
                     <td @contextmenu="rightClickCopy($event, file.location, file.size)" class="pointer"
                         @click="clickRow(file)">{{ file.name }}</td>
                     <td>{{ toReadable(file.size) }}</td>
-                    <td><input v-if="file.fileid" :class="file.prevError == null ? '' : file.prevError ? 'incorrect' : 'correct'"
+                    <td><input v-if="file.fileid"
+                            :class="file.prevError == null ? '' : file.prevError ? 'incorrect' : 'correct'"
                             @change="e => onChangePrevious(e.target.value, file)" :value="file.previous" type="number">
                     </td>
-                    <td><input v-if="file.fileid" :class="file.nextError == null ? '' : file.nextError ? 'incorrect' : 'correct'"
-                        @change="e => onChangeNext(e.target.value, file)" :value="file.next"
-                        type="number"></td>
+                    <td><input v-if="file.fileid"
+                            :class="file.nextError == null ? '' : file.nextError ? 'incorrect' : 'correct'"
+                            @change="e => onChangeNext(e.target.value, file)" :value="file.next" type="number"></td>
                 </tr>
             </table>
         </div>
@@ -50,11 +51,19 @@ const props = defineProps({
     Showfolders: { type: Boolean }
 });
 
-function getFileUIDFromID(id) {
+async function getFileUIDFromID(id) {
     if (!id) return null;
-    const val = props.files.find(w => w.id == id);
-    if (!val) return null;
-    else return val;
+    const { data, error } = await supabase
+        .from('Files')
+        .select('fileid')
+        .eq('id', id)
+    //const val = props.files.find(w => w.id == id);
+    if (error) {
+        console.log(error);
+        return null;
+    }
+    if (data.length == 0) return null;
+    else return data[0].fileid;
 }
 
 async function onChangePrevious(value, file) {
@@ -62,25 +71,20 @@ async function onChangePrevious(value, file) {
         file.prevError = null;
         return;
     }
-    const val = getFileUIDFromID(value);
+    const val = await getFileUIDFromID(value);
     if (val) {
-        if (val.fileid != null) {
-            const { error } = await supabase
-                .from('Files')
-                .update({ previous: val.fileid })
-                .eq('id', file.id);
-            if (error) {
-                console.log(error);
-                file.prevError = true;
-            } else {
-                file.previous = value;
-                file.prevError = false;
-            }
-        } else {
+        const { error } = await supabase
+            .from('Files')
+            .update({ previous: val })
+            .eq('id', file.id);
+        if (error) {
+            console.log(error);
             file.prevError = true;
-            //i dunno print an error that theres no file id
-            console.log("File doesnt have a fileid because its too small..")
+        } else {
+            file.previous = value;
+            file.prevError = false;
         }
+
     } else {
         file.prevError = true;
     }
@@ -91,24 +95,18 @@ async function onChangeNext(value, file) {
         file.nextError = null;
         return;
     }
-    const val = getFileUIDFromID(value);
+    const val = await getFileUIDFromID(value);
     if (val) {
-        if (val.fileid != null) {
-            const { error } = await supabase
-                .from('Files')
-                .update({ next: val.fileid })
-                .eq('id', file.id);
-            if (error) {
-                console.log(error);
-                file.nextError = true;
-            } else {
-                file.next = value;
-                file.nextError = false;
-            }
-        } else {
+        const { error } = await supabase
+            .from('Files')
+            .update({ next: val })
+            .eq('id', file.id);
+        if (error) {
+            console.log(error);
             file.nextError = true;
-            //i dunno print an error that theres no file id
-            console.log("File doesnt have a fileid because its too small..")
+        } else {
+            file.next = value;
+            file.nextError = false;
         }
     } else {
         file.nextError = true;
@@ -178,9 +176,5 @@ h2 {
 
 .pointer {
     cursor: pointer;
-}
-
-.filetable {
-    background-color: #fff3;
 }
 </style>
