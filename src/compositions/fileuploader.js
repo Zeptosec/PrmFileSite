@@ -2,7 +2,6 @@ import { ref } from 'vue';
 import axios from 'axios'
 
 export const chunkSize = 8 * 1024 * 1024;
-
 /**
  * 
  * @param {File} chunk uploads a single chunk to server.
@@ -21,11 +20,6 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     let finished = false;
     while (!finished) {
         try {
-            const reserveRes = await axios.get(`${url.slice(0, url.lastIndexOf("/"))}/reserve`);
-            if(reserveRes.status != 202){
-                await new Promise(r => setTimeout(r, 10000));
-                continue;
-            }
             res = await axios.post(url, data, {
                 onUploadProgress: function (event) {
                     // for small files on fast internet otherwise overshoots
@@ -52,6 +46,9 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     return place;
 }
 
+let promises = [];
+let pushCnt = 0;
+let reserveLock = false;
 /**
  * 
  * @param {File} file File that will be split into largest chunks and uploaded.
@@ -62,24 +59,47 @@ const uploadChunkedWithStatus = async (file, url, status) => {
     let cnt = 1;
     let start = 0;
     let end = 0;
-    let pushCnt = 0;
-    let promises = [];
-
+    let completed = null;
+    let chunk = null;
     while (end < file.size) {
-        end = Math.min(chunkSize * cnt, file.size)
-        const chunk = file.slice(start, end);
-        let completed = null;
         // this is a promise loop only 10 promises at a time can be active
         // otherwise if the file is too big 
         // without this limitation the server will run out of memory and crash
+
         if (promises.length >= 10) {
             completed = await Promise.any(promises);
+            promises.splice(completed, 1);
+            end = Math.min(chunkSize * cnt, file.size)
+            chunk = file.slice(start, end);
         }
+
+        // lock for one file chunk reserve at the time
+        if (reserveLock) {
+            await new Promise(r => setTimeout(r, 1500));
+            continue;
+        }
+        reserveLock = true;
+        // past this point reserving one file chunk
+        const reserveRes = await axios.get(`${url.slice(0, url.lastIndexOf("/"))}/reserve`);
+        if (reserveRes.status != 202) {
+            // failed to reserve waiting and will try again..
+            await new Promise(r => setTimeout(r, 10000));
+            reserveLock = false;
+            continue;
+        }
+        // place for this chunk was reserved releasing lock
+        reserveLock = false;
+
+        // starting upload
         if (completed != null) {
             promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed);
+            console.log(`completed ${file.name} - ${completed}`);
         } else {
+            end = Math.min(chunkSize * cnt, file.size)
+            chunk = file.slice(start, end);
             promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushCnt));
             pushCnt++;
+            console.log(`added ${file.name} - ${pushCnt}`);
         }
         start = end;
         cnt++;
