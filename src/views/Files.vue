@@ -23,11 +23,13 @@ const files = ref([]);
 const currentPage = ref(1);
 const amountPerPage = ref(50);
 const fileCount = ref(0);
+const searchStr = ref(null);
 
 watch(currentPage, getPageData);
 
 const filterRezults = (text) => {
-    getPageData(text);
+    searchStr.value = text;
+    getPageData();
 }
 
 const canGoNext = () => {
@@ -38,14 +40,14 @@ const canGoNext = () => {
     return Math.floor(fileCount.value / amountPerPage.value) >= currentPage.value;
 }
 
-async function getPageData(searchStr = null) {
+async function getPageData() {
     //console.log(currentPage.value);
     let rez;
-    if (searchStr) {
+    if (searchStr.value) {
         rez = await supabase
             .from('Files')
             .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
-            .like("name", `%${searchStr}%`)
+            .like("name", `%${searchStr.value}%`)
             .order('id', { ascending: false })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
