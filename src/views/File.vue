@@ -16,7 +16,7 @@
                 <button v-if="!clickedWatch" @click="() => clickedWatch = true"
                     :disabled="status.downloading">Watch</button>
                 <video ref="vtag" @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
-                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" :width="getWidth()"
+                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`"
                     controls></video>
             </div>
 
@@ -31,8 +31,8 @@
             </div>
 
             <div v-if="filedata && (filedata.previous || filedata.next)" class="row">
-                <button v-if="filedata.previous" @click="gotoLinkFromUID(filedata.previous)">Previous</button>
-                <button v-if="filedata.next" @click="gotoLinkFromUID(filedata.next)">Next</button>
+                <button v-if="filedata.previous" @click="gotoLinkFromUID(filedata.previous.fileid)">Previous</button>
+                <button v-if="filedata.next" @click="gotoLinkFromUID(filedata.next.fileid)">Next</button>
             </div>
         </div>
     </main>
@@ -68,12 +68,6 @@ const loadedVideo = (uid) => {
     console.log(filedata.value);
 }
 
-const getWidth = () => {
-    const val = Math.min(600, Math.round(window.innerWidth * .9));
-    console.log(val);
-    return val;
-}
-
 const prepareWatch = async () => {
     await startDownload(false);
     status.value.downloading = false;
@@ -85,6 +79,7 @@ const beforeUnloadListener = (event) => {
 };
 
 function gotoLinkFromUID(uid) {
+    console.log(uid);
     router.push(`/file/${uid}`);
     clickedWatch.value = false;
     fetchFiles(uid);
@@ -124,6 +119,7 @@ async function fetchFiles(newid = null) {
     }
     const res = await fetch("https://tartan-general-scion.glitch.me/api/file?id=" + id);
     const json = await res.json();
+    console.log(json);
     if (res.ok) {
         json.data[0].readableSize = toReadable(json.data[0].size);
         filedata.value = json.data[0];

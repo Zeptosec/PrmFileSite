@@ -24,11 +24,13 @@
                     <td>{{ toReadable(file.size) }}</td>
                     <td><input v-if="file.fileid"
                             :class="file.prevError == null ? '' : file.prevError ? 'incorrect' : 'correct'"
-                            @change="e => onChangePrevious(e.target.value, file)" :value="file.previous" type="number">
+                            @change="e => onChangePrevious(e.target.value, file)"
+                            :value="file.previous ? file.previous.id : ''" type="number">
                     </td>
                     <td><input v-if="file.fileid"
                             :class="file.nextError == null ? '' : file.nextError ? 'incorrect' : 'correct'"
-                            @change="e => onChangeNext(e.target.value, file)" :value="file.next" type="number"></td>
+                            @change="e => onChangeNext(e.target.value, file)" :value="file.next ? file.next.id : ''"
+                            type="number"></td>
                 </tr>
             </table>
         </div>
@@ -36,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
 import { getLinkFromFile } from '../compositions/filedownloader';
@@ -69,47 +71,36 @@ async function getFileUIDFromID(id) {
 async function onChangePrevious(value, file) {
     if (value == "" || value == file.id) {
         file.prevError = null;
-        return;
+        value = null;
     }
-    const val = await getFileUIDFromID(value);
-    if (val) {
-        const { error } = await supabase
-            .from('Files')
-            .update({ previous: val })
-            .eq('id', file.id);
-        if (error) {
-            console.log(error);
-            file.prevError = true;
-        } else {
-            file.previous = value;
-            file.prevError = false;
-        }
-
-    } else {
+    const { error } = await supabase
+        .from('Files')
+        .update({ previous: value })
+        .eq('id', file.id);
+    if (error) {
+        console.log(error);
         file.prevError = true;
+    } else {
+        file.previous = { id: value };
+        file.prevError = false;
     }
 }
 
 async function onChangeNext(value, file) {
     if (value == "" || value == file.id) {
+        value = null;
         file.nextError = null;
-        return;
     }
-    const val = await getFileUIDFromID(value);
-    if (val) {
-        const { error } = await supabase
-            .from('Files')
-            .update({ next: val })
-            .eq('id', file.id);
-        if (error) {
-            console.log(error);
-            file.nextError = true;
-        } else {
-            file.next = value;
-            file.nextError = false;
-        }
-    } else {
+    const { error } = await supabase
+        .from('Files')
+        .update({ next: value })
+        .eq('id', file.id);
+    if (error) {
+        console.log(error);
         file.nextError = true;
+    } else {
+        file.next = { id: value };
+        file.nextError = false;
     }
 }
 

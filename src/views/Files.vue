@@ -47,7 +47,7 @@ async function getPageData() {
     //console.log(currentPage.value);
     const { data, count, error } = await supabase
         .from('Files')
-        .select('id, size, chunks, name, fileid, path, previous, next', { count: 'estimated' })
+        .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
         .order('id', { ascending: false })
         .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     fileCount.value = count;
@@ -77,8 +77,8 @@ async function getPageData() {
             direct,
             id: data[i].id,
             fileid: data[i].fileid,
-            next: getFileIDFromUID(data, data[i].next),
-            previous: getFileIDFromUID(data, data[i].previous)
+            next: data[i].next,
+            previous: data[i].previous
         });
     }
     files.value = tmp;
