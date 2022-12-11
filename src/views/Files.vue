@@ -1,10 +1,8 @@
 <template>
     <main>
         <div class="filetable">
-            <LoginFileTable v-if="files.length > 0" :files="files" />
-            <div v-else>
-                <h2>{{ msg }}</h2>
-            </div>
+            <LoginFileTable @filter-text="w => filterRezults(w)" :files="files" />
+
             <div class="row">
                 <button v-if="currentPage > 1" @click="() => currentPage -= 1">Previous</button>
                 <button v-if="canGoNext()" @click="() => currentPage += 1">Next</button>
@@ -28,28 +26,36 @@ const fileCount = ref(0);
 
 watch(currentPage, getPageData);
 
+const filterRezults = (text) => {
+    getPageData(text);
+}
+
 const canGoNext = () => {
     // heard something about the number 1000 being the limit??
-    if(fileCount.value == 1000){
+    if (fileCount.value == 1000) {
         return true;
     }
     return Math.floor(fileCount.value / amountPerPage.value) >= currentPage.value;
 }
 
-function getFileIDFromUID(searchFiles, fileuid) {
-    if (!fileuid) return "";
-    const val = searchFiles.find(w => w.fileid === fileuid);
-    if (val) return val.id;
-    else return "";
-}
-
-async function getPageData() {
+async function getPageData(searchStr = null) {
     //console.log(currentPage.value);
-    const { data, count, error } = await supabase
-        .from('Files')
-        .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
-        .order('id', { ascending: false })
-        .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+    let rez;
+    if (searchStr) {
+        rez = await supabase
+            .from('Files')
+            .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
+            .like("name", `%${searchStr}%`)
+            .order('id', { ascending: false })
+            .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+    } else {
+        rez = await supabase
+            .from('Files')
+            .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
+            .order('id', { ascending: false })
+            .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+    }
+    const { data, count, error } = rez;
     fileCount.value = count;
     if (error) {
         msg.value = error;
@@ -80,6 +86,9 @@ async function getPageData() {
             next: data[i].next,
             previous: data[i].previous
         });
+    }
+    if (tmp.length == 0) {
+        msg.value = "Nothing was found";
     }
     files.value = tmp;
 }

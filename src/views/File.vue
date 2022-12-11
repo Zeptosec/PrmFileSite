@@ -79,7 +79,6 @@ const beforeUnloadListener = (event) => {
 };
 
 function gotoLinkFromUID(uid) {
-    console.log(uid);
     router.push(`/file/${uid}`);
     clickedWatch.value = false;
     fetchFiles(uid);
@@ -119,7 +118,6 @@ async function fetchFiles(newid = null) {
     }
     const res = await fetch("https://tartan-general-scion.glitch.me/api/file?id=" + id);
     const json = await res.json();
-    console.log(json);
     if (res.ok) {
         json.data[0].readableSize = toReadable(json.data[0].size);
         filedata.value = json.data[0];

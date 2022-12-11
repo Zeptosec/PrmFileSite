@@ -5,19 +5,21 @@
                 :style="{ 'position': 'absolute', 'display': display, 'top': position.y+ 'px', 'left': position.x+'px' }">
                 Link copied!</div>
         </Teleport>
-        <div v-if="files.length > 0">
+        <div>
             <h2>Here is a list of your uploaded files</h2>
             <p><b>Left click Name to download</b></p>
             <p><b>Right click Name to copy link</b></p>
-            <table>
-                <thead>
+            <table class="table" >
+                <input :class="searchSuccess == null ? '' : searchSuccess ? 'correct' : 'incorrect'" type="text"
+                    name="filter" id="filter" @input="w => SearchField(w.target.value)">
+                <thead v-if="files.length > 0">
                     <th>ID</th>
                     <th>Name</th>
                     <th>Size</th>
                     <th>Previous (ID)</th>
                     <th>Next (ID)</th>
                 </thead>
-                <tr v-for="(file, ind) in files" :key="ind">
+                <tr v-if="files.length > 0" v-for="(file, ind) in files" :key="ind">
                     <td>{{ file.fileid ? file.id : "---" }}</td>
                     <td @contextmenu="rightClickCopy($event, file.location, file.size)" class="pointer"
                         @click="clickRow(file)">{{ file.name }}</td>
@@ -33,12 +35,13 @@
                             type="number"></td>
                 </tr>
             </table>
+            <p v-if="files.length == 0">Nothing was found</p>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
 import { getLinkFromFile } from '../compositions/filedownloader';
@@ -47,25 +50,23 @@ import { supabase } from '../supabase';
 const display = ref("none");
 const position = ref({ x: 0, y: 0 });
 const timeout = ref();
+const searchSuccess = ref(null);
 
 const props = defineProps({
     files: { type: Array, required: true },
     Showfolders: { type: Boolean }
 });
 
-async function getFileUIDFromID(id) {
-    if (!id) return null;
-    const { data, error } = await supabase
-        .from('Files')
-        .select('fileid')
-        .eq('id', id)
-    //const val = props.files.find(w => w.id == id);
-    if (error) {
-        console.log(error);
-        return null;
-    }
-    if (data.length == 0) return null;
-    else return data[0].fileid;
+const emit = defineEmits(['filterText']);
+
+let tout = null;
+const SearchField = (text) => {
+    if (tout)
+        clearTimeout(tout);
+    tout = setTimeout(() => {
+        if (!text) text = null;
+        emit('filterText', text);
+    }, 1000);
 }
 
 async function onChangePrevious(value, file) {
@@ -139,6 +140,11 @@ function clickRow(file) {
 </script>
 
 <style scoped>
+.table {
+    position: relative;
+    width: 100%;
+}
+
 .incorrect {
     border-color: red;
 }
@@ -149,6 +155,21 @@ function clickRow(file) {
 
 td input {
     width: 50px;
+}
+
+#filter {
+    position: absolute;
+    top: -35px;
+    border-width: 1px;
+    border-radius: 5px;
+    border-style: solid;
+    right: 0px;
+    width: 180px;
+    padding: 3px;
+}
+
+#filter:focus {
+    outline: none;
 }
 
 .cp-info {
