@@ -17,8 +17,8 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     data.append('file', chunk);
     let prevLoaded = 0;
     let res = null;
-    let finished = false;
-    while (!finished) {
+    let json = null;
+    while (!json) {
         try {
             res = await axios.post(url, data, {
                 onUploadProgress: function (event) {
@@ -28,7 +28,7 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
                     prevLoaded = loaded;
                 }
             });
-            finished = true;
+            json = res.data;
         } catch (err) {
             console.log("Failed to upload chunk retrying...");
             console.log(err);
@@ -41,7 +41,7 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
     }
     if (res == null)
         throw Error("Failed to get a response");
-    const json = res.data;
+    
     status.value.location[index] = json.location;
     return place;
 }
@@ -140,7 +140,7 @@ const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
         await uploadChunkedWithStatus2(file, url, status);
         //throw Error("This is tmp error will be removed");
     } else {
-        await uploadChunkWithStatus(file, url, status, 0);
+        await uploadChunkedWithStatus2(file, url, status);
     }
     status.value.finished = true;
 }
