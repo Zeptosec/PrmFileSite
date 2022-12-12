@@ -54,23 +54,21 @@ const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
 const clickedWatch = ref(false);
 let vtag = ref(null);
 
-window.onunload = function () {
+function saveTimestamp() {
     if (vtag.value) {
         localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
     }
+    console.log("saved");
 }
-onUnmounted(() => {
-    if (vtag.value) {
-        localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
-    }
-})
+window.onunload = saveTimestamp;
+onUnmounted(saveTimestamp)
 
 const loadedVideo = (uid) => {
     const val = localStorage.getItem(uid);
+    console.log(`loaded: ${val}`);
     if (val) {
         vtag.value.currentTime = val;
     }
-    console.log(filedata.value);
 }
 
 const prepareWatch = async () => {
@@ -84,6 +82,7 @@ const beforeUnloadListener = (event) => {
 };
 
 function gotoLinkFromUID(uid) {
+    saveTimestamp();
     router.push(`/file/${uid}`);
     clickedWatch.value = false;
     fetchFiles(uid);
