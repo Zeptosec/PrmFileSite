@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { downloadWithStatus, toReadable, downloadFileUrl } from '../compositions/filedownloader';
 import router from '../router';
@@ -59,6 +59,11 @@ window.onunload = function () {
         localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
     }
 }
+onUnmounted(() => {
+    if (vtag.value) {
+        localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
+    }
+})
 
 const loadedVideo = (uid) => {
     const val = localStorage.getItem(uid);
