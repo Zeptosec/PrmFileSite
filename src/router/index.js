@@ -33,6 +33,10 @@ const router = createRouter({
       component: () => import('../views/File.vue')
     },
     {
+      path: '/public',
+      component: () => import('../views/Public.vue')
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

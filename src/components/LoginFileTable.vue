@@ -18,6 +18,7 @@
                     <th>Size</th>
                     <th>Previous (ID)</th>
                     <th>Next (ID)</th>
+                    <th>Public</th>
                 </thead>
                 <tr v-if="files.length > 0" v-for="(file, ind) in files" :key="ind">
                     <td>{{ file.fileid ? file.id : "---" }}</td>
@@ -33,6 +34,9 @@
                             :class="file.nextError == null ? '' : file.nextError ? 'incorrect' : 'correct'"
                             @change="e => onChangeNext(e.target.value, file)" :value="file.next ? file.next.id : ''"
                             type="number"></td>
+                    <td>
+                        <input @change="w => emit('publicChange',file, w.target.checked)" :checked="file.isPublic" type="checkbox" name="">
+                    </td>
                 </tr>
             </table>
             <p v-if="files.length == 0">Nothing was found</p>
@@ -41,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
 import { getLinkFromFile } from '../compositions/filedownloader';
@@ -57,7 +61,7 @@ const props = defineProps({
     Showfolders: { type: Boolean }
 });
 
-const emit = defineEmits(['filterText']);
+const emit = defineEmits(['filterText', 'publicChange']);
 
 let tout = null;
 const SearchField = (text) => {

@@ -35,11 +35,13 @@ async function logout() {
       <div class="flex" v-if="theUser == null">
         <RouterLink to="/register">Register</RouterLink>
         <RouterLink to="/login">Login</RouterLink>
+        <RouterLink to="/public">Public</RouterLink>
       </div>
       <div v-else class="flex">
         <a @click="logout">Logout</a>
         <span class="sm-disable">{{theUser.email}}</span>
         <RouterLink to="/files">Files</RouterLink>
+        <RouterLink to="/public">Public</RouterLink>
       </div>
     </nav>
   </div>

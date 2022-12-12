@@ -1,7 +1,8 @@
 <template>
     <main>
         <div class="filetable">
-            <LoginFileTable @filter-text="w => filterRezults(w)" :files="files" />
+            <LoginFileTable @publicChange="(f, v) => changePublic(f, v)" @filter-text="w => filterRezults(w)"
+                :files="files" :theUser="theUser" />
 
             <div class="row">
                 <button v-if="currentPage > 1" @click="() => currentPage -= 1">Previous</button>
@@ -24,6 +25,19 @@ const currentPage = ref(1);
 const amountPerPage = ref(50);
 const fileCount = ref(0);
 const searchStr = ref(null);
+const props = defineProps({
+    theUser: {
+        type: Object,
+        required: false
+    }
+});
+
+const changePublic = async (file, val) => {
+    const { error } = await supabase
+        .from("Files")
+        .update({ isPublic: val })
+        .eq('id', file.id);
+}
 
 watch(currentPage, getPageData);
 
@@ -46,17 +60,18 @@ async function getPageData() {
     if (searchStr.value) {
         rez = await supabase
             .from('Files')
-            .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
+            .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
             .like("name", `%${searchStr.value}%`)
             .order('id', { ascending: false })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
         rez = await supabase
             .from('Files')
-            .select('id, size, chunks, name, fileid, path, previous(id), next(id)', { count: 'estimated' })
+            .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
             .order('id', { ascending: false })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
+
     const { data, count, error } = rez;
     fileCount.value = count;
     if (error) {
@@ -86,7 +101,8 @@ async function getPageData() {
             id: data[i].id,
             fileid: data[i].fileid,
             next: data[i].next,
-            previous: data[i].previous
+            previous: data[i].previous,
+            isPublic: data[i].isPublic
         });
     }
     if (tmp.length == 0) {

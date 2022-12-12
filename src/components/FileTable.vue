@@ -6,7 +6,7 @@
                 Link copied!</div>
         </Teleport>
         <div v-if="hasSaveFileData()">
-            <h2>Here is a list of your uploaded files</h2>
+            <h2>{{ heading == null ? 'Here is a list of your uploaded files' : heading}}</h2>
             <p><b>Left click to download</b></p>
             <p><b>Right click to copy link</b></p>
             <table>
@@ -15,8 +15,7 @@
                     <th>Name</th>
                     <th>Size</th>
                 </thead>
-                <tr v-for="(file, ind) in files" :key="ind" class="pointer"
-                    @click="clickRow(file)"
+                <tr v-for="(file, ind) in files" :key="ind" class="pointer" @click="clickRow(file)"
                     @contextmenu="rightClickCopy($event, file.value.savedFileData.link, file.value.savedFileData.size)">
                     <td v-if="shouldShow(file)">{{ ind + 1 }}</td>
                     <td v-if="shouldShow(file)">{{ file.value.savedFileData.name }}</td>
@@ -38,7 +37,8 @@ const timeout = ref();
 
 const props = defineProps({
     files: { type: Array, required: true },
-    Showfolders: { type: Boolean }
+    Showfolders: { type: Boolean },
+    heading: { type: String }
 });
 
 const shouldShow = (file) => {
@@ -53,6 +53,7 @@ const hasSaveFileData = () => {
 }
 
 function rightClickCopy(event, loc, size) {
+    console.log(props.heading);
     event.preventDefault();
     const clipboardData =
         event.clipboardData ||
