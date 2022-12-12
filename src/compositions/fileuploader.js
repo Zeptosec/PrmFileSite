@@ -65,10 +65,10 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place, theUser) 
                     prevLoaded = loaded;
                 }
             });
-            console.log(`chunk was uploaded`)
-            console.log(`${status.value.name} - ${index} - ${Math.round(status.value.uploadedBytes / status.value.size * 10000) / 100}`);
-            console.log(`${status.value.uploadedBytes} / ${status.value.size}`);
-            console.log(`${status.value.locationsObtained} / ${status.value.locationLengthUploaded}`);
+            // console.log(`chunk was uploaded`)
+            // console.log(`${status.value.name} - ${index} - ${Math.round(status.value.uploadedBytes / status.value.size * 10000) / 100}`);
+            // console.log(`${status.value.uploadedBytes} / ${status.value.size}`);
+            // console.log(`${status.value.locationsObtained} / ${status.value.locationLengthUploaded}`);
             json = res.data;
         } catch (err) {
             console.log("Failed to upload chunk retrying...");
@@ -83,7 +83,7 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place, theUser) 
     status.value.location[index] = json.location;
     status.value.locationsObtained += 1;
     if (status.value.locationsObtained == status.value.locationLengthUploaded) {
-        console.log(`${status.value.name} Writing file to database`);
+        // console.log(`${status.value.name} Writing file to database`);
         await finishUpFile(status, theUser);
     }
     return place;
@@ -104,18 +104,18 @@ const getReserve = async (url) => {
         return { completed, success: false };
     }
     pendingReserve = true;
-    console.log(`promises.length >= limit: ${promises.length} >= ${limit}`)
+    //console.log(`promises.length >= limit: ${promises.length} >= ${limit}`)
     if (promises.length >= limit) {
-        console.log(`Promise array is full waiting for one to finish`);
+        //console.log(`Promise array is full waiting for one to finish`);
         completed = await Promise.any(promises);
-        console.log(`Promise number ${completed} finished`);
+        //console.log(`Promise number ${completed} finished`);
     }
     let res;
     try {
-        console.log(`trying to reserve`);
+        //console.log(`trying to reserve`);
         res = await axios.get(url);
     } catch (err) {
-        console.log(`Got an error while reserving if its 451 then just wait..`);
+        //console.log(`Got an error while reserving if its 451 then just wait..`);
         console.log(err);
         setTimeout(() => pendingReserve = false, 1000);
         return { completed, success: false };
@@ -141,7 +141,7 @@ const uploadChunkedWithStatus3 = async (file, url, status, theUser) => {
             await new Promise(r => setTimeout(r, 1000));
             continue;
         }
-        console.log(`Passed reserve means got reserve`);
+        // console.log(`Passed reserve means got reserve`);
         end = Math.min(chunkSize * cnt, file.size)
         let chunk;
         if (start == 0 && end == file.size) {
@@ -150,16 +150,16 @@ const uploadChunkedWithStatus3 = async (file, url, status, theUser) => {
             chunk = file.slice(start, end);
         }
         if (completed != null) {
-            console.log(`Replacing completed chunk ${completed} slot with new`);
+            // console.log(`Replacing completed chunk ${completed} slot with new`);
             promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed, theUser);
         } else if (promises.length < limit) {
-            console.log(`Pushing new chunk on list`);
+            // console.log(`Pushing new chunk on list`);
             const pushInd = promises.length;
             promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushInd, theUser));
         } else {
             throw Error("Somehow completed promises got lost???");
         }
-        console.log(`Amount of promises in list: ${promises.length}`);
+        // console.log(`Amount of promises in list: ${promises.length}`);
         start = end;
         cnt++;
     }
