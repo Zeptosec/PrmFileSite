@@ -5,7 +5,7 @@
                 :style="{ 'position': 'absolute', 'display': display, 'top': position.y+ 'px', 'left': position.x+'px' }">
                 Link copied!</div>
         </Teleport>
-        <div v-if="files.length > 0">
+        <div v-if="hasSaveFileData()">
             <h2>Here is a list of your uploaded files</h2>
             <p><b>Left click to download</b></p>
             <p><b>Right click to copy link</b></p>
@@ -17,10 +17,10 @@
                 </thead>
                 <tr v-for="(file, ind) in files" :key="ind" class="pointer"
                     @click="clickRow(file)"
-                    @contextmenu="rightClickCopy($event, file.location, file.size)">
-                    <td>{{ind+1}}</td>
-                    <td>{{file.name}}</td>
-                    <td>{{toReadable(file.size)}}</td>
+                    @contextmenu="rightClickCopy($event, file.value.savedFileData.link, file.value.savedFileData.size)">
+                    <td v-if="shouldShow(file)">{{ ind + 1 }}</td>
+                    <td v-if="shouldShow(file)">{{ file.value.savedFileData.name }}</td>
+                    <td v-if="shouldShow(file)">{{ toReadable(file.value.savedFileData.size) }}</td>
                 </tr>
             </table>
         </div>
@@ -31,7 +31,6 @@
 import { ref } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
-import { getLinkFromFile } from '../compositions/filedownloader';
 import router from '../router';
 const display = ref("none");
 const position = ref({ x: 0, y: 0 });
@@ -41,6 +40,17 @@ const props = defineProps({
     files: { type: Array, required: true },
     Showfolders: { type: Boolean }
 });
+
+const shouldShow = (file) => {
+    return file.value.savedFileData != null;
+}
+
+const hasSaveFileData = () => {
+    if (props.files.length == 0) return false;
+    const rz = props.files.filter(w => w.value.savedFileData != null).length > 0;
+    return rz;
+
+}
 
 function rightClickCopy(event, loc, size) {
     event.preventDefault();
@@ -66,11 +76,11 @@ function rightClickCopy(event, loc, size) {
 }
 
 function clickRow(file) {
-    if (file.size <= chunkSize) {
+    if (file.value.savedFileData.size <= chunkSize) {
 
-        window.open(getLinkFromFile(file), '_blank');
+        window.open(file.value.savedFileData.link, '_blank');
     } else {
-        let routeData = router.resolve(getLinkFromFile(file));
+        let routeData = router.resolve(file.value.savedFileData.link);
         window.open(routeData.href, '_blank');
     }
 }
@@ -95,7 +105,7 @@ h2 {
     cursor: pointer;
 }
 
-.filetable{
+.filetable {
     background-color: #fff3;
 }
 </style>

@@ -1,6 +1,6 @@
 <script setup>
 import useFileList from '../compositions/filelist';
-import { chunkSize, uploadFilesWithStatus } from '../compositions/fileuploader';
+import { chunkSize, uploadFilesWithStatus, uploadFilesWithStatus2 } from '../compositions/fileuploader';
 import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
@@ -43,6 +43,35 @@ const beforeUnloadListener = (event) => {
   return event.returnValue = "Are you sure you want to leave?";
 };
 
+async function upload2() {
+  isUploading.value = true;
+  errMsg.value = "Waking up the server...";
+  addEventListener("beforeunload", beforeUnloadListener, {capture: true});
+
+  try {
+    let res = await fetch(apiEndPoint);
+    if (res.ok) {
+      errMsg.value = "Server awake. Starting the upload...";
+    } else {
+      errMsg.value = "Server did not respond!";
+      return;
+    }
+    let filesFrom = status.value.files.length;
+    let filesTo = filesFrom + files.value.length;
+    // upload files function
+
+    await uploadFilesWithStatus2(files.value, `${apiEndPoint}/api/upload`, props.theUser, status);
+    console.log(status.value);
+    files.value = [];
+    errMsg.value = "Upload was successful";
+  } catch (err) {
+    console.log(err);
+  } finally {
+    removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
+    isUploading.value = false;
+  }
+}
+
 async function upload() {
   isUploading.value = true;
   errMsg.value = "Waking up the server...";
@@ -54,7 +83,7 @@ async function upload() {
     }
     let filesFrom = status.value.files.length;
     let filesTo = filesFrom + files.value.length;
-    await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser != null, status);
+    await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser, status);
     // console.log("statuses");
     // console.log(status.value);
     if (props.theUser) {
@@ -124,7 +153,7 @@ async function upload() {
           <FilePreview v-for="file of files" :key="file.id" :file="file" tag="li" @remove="removeFile" />
         </ul>
       </DropZone>
-      <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload"
+      <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload2"
         class="upload-button">Upload</button>
       <h2 v-show="errMsg" class="error">{{errMsg}}</h2>
       <div v-if="(status && !status.finished) || status.hasErrors">
@@ -141,12 +170,12 @@ async function upload() {
             <td v-if="!statuses.value.finished && !statuses.value.error">
               {{Math.round(statuses.value.uploadedBytes/statuses.value.size*10000)/100}}%</td>
             <td v-if="statuses.value.error" class="error">{{statuses.value.error}}</td>
-            <td v-if="statuses.value.finished">{{statuses.value.name}}</td>
-            <td v-if="statuses.value.finished" class="success">uploaded</td>
+            <!-- <td v-if="statuses.value.finished">{{statuses.value.name}}</td>
+            <td v-if="statuses.value.finished" class="success">uploaded</td> -->
           </tr>
         </table>
       </div>
-      <FileTable :files="downloadLinks" />
+      <FileTable :files="status.files" />
       <!-- <ul>
         <li v-for="(link, ind) in downloadLinks" :key="ind">
           <p><a :href="link.location">{{link.name}}</a></p>

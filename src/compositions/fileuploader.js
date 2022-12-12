@@ -1,7 +1,45 @@
 import { ref } from 'vue';
 import axios from 'axios'
+import { supabase } from '../supabase';
+import { getIdFromLink } from './filedownloader.js';
 
 export const chunkSize = 8 * 1024 * 1024;
+
+const saveFileToDB = async (name, locations, userid, size) => {
+    let obj;
+    if (size > chunkSize) {
+        obj = { name, chunks: getIdFromLink(locations), userid, size };
+    } else {
+        obj = { name, chunks: getIdFromLink(locations), userid, size, fileid: null };
+    }
+    const { error, data } = await supabase
+        .from('Files')
+        .insert(obj);
+    if (error) {
+        throw Error(error);
+    }
+    return data[0];
+}
+
+const finishUpFile = async (status, theUser) => {
+    let dbData;
+    if (theUser) {
+        dbData = await saveFileToDB(status.value.name, status.value.location, theUser.id, status.value.size);
+        if (dbData.chunks.length == 1) {
+            dbData.link = status.value.location[0];
+        } else {
+            dbData.link = "/file/" + dbData.fileid;
+        }
+    } else {
+        dbData = { link: status.value.location[0], name: status.value.name, size: status.value.size, fileid: null };
+    }
+    // console.log(dbData);
+    // console.log(status.value)
+
+    status.value.savedFileData = dbData;
+    status.value.finished = true;
+}
+
 /**
  * 
  * @param {File} chunk uploads a single chunk to server.
@@ -9,18 +47,17 @@ export const chunkSize = 8 * 1024 * 1024;
  * @param {Object} status ref to status for storing information about upload
  * @param {Number} index where in array to store this blob for reconstruction purposes
  */
-const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
+const uploadChunkWithStatus = async (chunk, url, status, index, place, theUser) => {
     if (chunk.size > chunkSize)
         throw Error("Chunk size is too big");
 
     var data = new FormData();
     data.append('file', chunk);
     let prevLoaded = 0;
-    let res = null;
     let json = null;
     while (!json) {
         try {
-            res = await axios.post(url, data, {
+            const res = await axios.post(url, data, {
                 onUploadProgress: function (event) {
                     // for small files on fast internet otherwise overshoots
                     let loaded = Math.min(event.loaded, chunk.size);
@@ -28,6 +65,9 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
                     prevLoaded = loaded;
                 }
             });
+            console.log(`${status.value.name} - ${index} - ${Math.round(status.value.uploadedBytes / status.value.size * 10000) / 100}`);
+            console.log(`${status.value.uploadedBytes} / ${status.value.size}`);
+            console.log(`${status.value.locationsObtained} / ${status.value.locationLengthUploaded}`);
             json = res.data;
         } catch (err) {
             console.log("Failed to upload chunk retrying...");
@@ -39,10 +79,11 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place) => {
             //throw Error(err.response.data.error)
         }
     }
-    if (res == null)
-        throw Error("Failed to get a response");
-    
     status.value.location[index] = json.location;
+    status.value.locationsObtained += 1;
+    if (status.value.locationsObtained == status.value.locationLengthUploaded) {
+        await finishUpFile(status, theUser);
+    }
     return place;
 }
 
@@ -56,11 +97,11 @@ let pendingReserve = false;
  */
 const getReserve = async (url) => {
     let completed = null;
-    if(pendingReserve){
+    if (pendingReserve) {
         return { completed, success: false };
     }
     pendingReserve = true;
-    if (promises.length >= 15) {
+    if (promises.length >= 7) {
         completed = await Promise.any(promises);
     }
     let res;
@@ -79,13 +120,7 @@ const getReserve = async (url) => {
     return { completed, success: true };
 }
 
-/**
- * Uploads file by cutting it to chunks and saving to server
- * @param {File} file File that will be split into largest chunks and uploaded.
- * @param {string} url api end point to upload to.
- * @param {Object} status ref to status for storing information about upload
- */
-const uploadChunkedWithStatus2 = async (file, url, status) => {
+const uploadChunkedWithStatus3 = async (file, url, status, theUser) => {
     let cnt = 1;
     let start = 0;
     let end = 0;
@@ -94,54 +129,76 @@ const uploadChunkedWithStatus2 = async (file, url, status) => {
         // get reserve
         const { completed, success } = await getReserve(resUrl);
         if (!success) {
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 1000));
             continue;
         }
-        //console.log(promises.length);
-        // logic for uploading
         end = Math.min(chunkSize * cnt, file.size)
-        const chunk = file.slice(start, end);
-        //console.log(`${file.name} got reserve ${start} - ${end} | comp: ${completed}`);
-        if(completed != null){
-            promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed);
+        let chunk;
+        if (start == 0 && end == file.size) {
+            chunk = file;
+        } else {
+            chunk = file.slice(start, end);
+        }
+        if (completed != null) {
+            promises[completed] = uploadChunkWithStatus(chunk, url, status, cnt - 1, completed, theUser);
         } else if (promises.length < 15) {
             const pushInd = promises.length;
-            promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushInd));
+            promises.push(uploadChunkWithStatus(chunk, url, status, cnt - 1, pushInd, theUser));
         } else {
             throw Error("Somehow completed promises got lost???");
         }
         start = end;
         cnt++;
     }
-    await Promise.all(promises);
 }
 
-/**
- * 
- * @param {File} file 
- * @param {string} url api end point for uploading files
- * @param {Object} status a ref to object which can be used for showing progress bar
- */
-const uploadFileWithStatus = async (file, url, isLoggedIn, status) => {
+export const uploadFileWithStatus2 = async (file, url, theUser, status) => {
     if (!file) return;
 
-    status.value = {
-        name: file.name,
-        size: file.size,
-        uploadedBytes: 0,
-        location: [],
-        finished: false,
-    }
-
     if (file.size > chunkSize) {
-        if (!isLoggedIn) {
+        if (!theUser) {
             throw Error("File is too large. To upload file larger than 8 MB please login.");
         }
-        await uploadChunkedWithStatus2(file, url, status);
+        await uploadChunkedWithStatus3(file, url, status, theUser);
+
         //throw Error("This is tmp error will be removed");
     } else {
-        await uploadChunkedWithStatus2(file, url, status);
+        await uploadChunkedWithStatus3(file, url, status, theUser);
     }
+}
+
+const RetryFunction = async (status) => {
+
+}
+
+export const uploadFilesWithStatus2 = async (files, url, theUser, status) => {
+    if (files == null) return;
+    // when im not lazy would be a good idea to add typescript
+    status.value.finished = false;
+    for (let i = 0; i < files.length; i++) {
+        const fstatus = ref({
+            name: files[i].file.name,
+            size: files[i].file.size,
+            uploadedBytes: 0,
+            location: [],
+            finished: false,
+            locationsObtained: 0,
+            locationLengthUploaded: Math.ceil(files[i].file.size / chunkSize),
+            savedFileData: null
+        });
+        status.value.files.push(fstatus);
+    }
+
+    for (let i = 0; i < files.length; i++) {
+        try {
+            await uploadFileWithStatus2(files[i].file, url, theUser, status.value.files[i]);
+        } catch (err) {
+            status.value.files[i].value.error = err.message;
+            status.value.files[i].value.retryFunction = RetryFunction;
+            status.value.hasErrors = true;
+        }
+    }
+    await Promise.all(promises);
     status.value.finished = true;
 }
 
@@ -156,6 +213,18 @@ export const uploadFilesWithStatus = async (files, url, isLoggedIn, status) => {
     // when im not lazy would be a good idea to add typescript
     status.value.finished = false;
     // upload one file at the time because problems happen when there are too many files
+
+    // for (let i = 0; i < files.length; i++) {
+    //     const fstatus = ref();
+    //     status.value.files.push(fstatus);
+    //     try {
+    //         await uploadFileWithStatus(files[i].file, url, isLoggedIn, fstatus);
+    //     } catch (err) {
+    //         fstatus.value.error = err.message;
+    //         status.value.hasErrors = true;
+    //     }
+    // }
+
 
     await Promise.all(
         files.map(async file => {
