@@ -91,7 +91,7 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place, theUser) 
 
 let promises = [];
 let pendingReserve = false;
-const limit = 7;
+const limit = 15;
 
 /**
  * 
