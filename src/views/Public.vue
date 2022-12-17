@@ -1,6 +1,7 @@
 <template>
     <div>
-        <FileTable :files="files" :heading="'Here are the public files'" />
+        <h2 v-if="files.length == 0">Loading...</h2>
+        <FileTable v-else :files="files" :heading="'Here are the public files'" />
     </div>
 </template>
 
@@ -23,7 +24,7 @@ async function getPageData() {
     }
 
     if (!data) {
-        msg.value = "Currently you have no files stored.";
+        msg.value = "No files found.";
         return;
     }
     for (let i = 0; i < data.length; i++) {
@@ -52,6 +53,6 @@ onMounted(getPageData);
 
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 
 </style>
