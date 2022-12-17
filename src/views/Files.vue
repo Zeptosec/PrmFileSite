@@ -1,7 +1,7 @@
 <template>
     <main>
         <div class="filetable">
-            <LoginFileTable @publicChange="(f, v) => changePublic(f, v)" @filter-text="w => filterRezults(w)"
+            <LoginFileTable @sort="(w) => changeSort(w)" @publicChange="(f, v) => changePublic(f, v)" @filter-text="w => filterRezults(w)"
                 :files="files" :theUser="theUser" />
 
             <div class="row">
@@ -25,12 +25,19 @@ const currentPage = ref(1);
 const amountPerPage = ref(50);
 const fileCount = ref(0);
 const searchStr = ref(null);
+const ordering = ref({ col: "id", dir: false });
 const props = defineProps({
     theUser: {
         type: Object,
         required: false
     }
 });
+
+const changeSort = (val) => {
+    ordering.value.col = val.col;
+    ordering.value.dir = val.dir;
+    getPageData();
+}
 
 const changePublic = async (file, val) => {
     const { error } = await supabase
@@ -62,13 +69,13 @@ async function getPageData() {
             .from('Files')
             .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
             .like("name", `%${searchStr.value}%`)
-            .order('id', { ascending: false })
+            .order(ordering.value.col, { ascending: ordering.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
         rez = await supabase
             .from('Files')
             .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
-            .order('id', { ascending: false })
+            .order(ordering.value.col, { ascending: ordering.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
 

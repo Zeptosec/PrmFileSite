@@ -1,21 +1,14 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router';
-import { ref } from 'vue';
 import router from './router';
 import { supabase } from './supabase';
 import useUser from './modules/useUser';
 import { onMounted } from 'vue';
 const { theUser, loadUser } = useUser();
-const windowWidth = ref(500);
 //import HelloWorld from './components/HelloWorld.vue'
 
 onMounted(async () => {
   await loadUser();
-  windowWidth.value = window.innerWidth;
-})
-
-addEventListener('resize', (w) => {
-  windowWidth.value = window.innerWidth;
 })
 
 function loggedin(u) {
@@ -32,15 +25,11 @@ async function logout() {
   theUser.value = null;
   router.push('/');
 }
-
-function windowSize() {
-  return window.innerWidth;
-}
 </script>
 
 <template>
   <div class="wrapper">
-    <RouterLink to="/" class="brnd">{{ windowWidth > 443 ? 'Perma File Store' : 'PFS' }}</RouterLink>
+    <RouterLink to="/" class="brnd sm-content"><span>Perma File Store</span></RouterLink>
     <nav class="w-right">
       <div class="flex" v-if="theUser == null">
         <RouterLink to="/register">Register</RouterLink>
@@ -69,9 +58,13 @@ function windowSize() {
 
 }
 
-@media only screen and (max-width: 430px) {
-  .scaled {
-    scale: 0.8;
+@media only screen and (max-width: 435px) {
+  
+  .sm-content span {
+    display: none;
+  }
+  .sm-content:after {
+    content: 'PFS';
   }
 
 }

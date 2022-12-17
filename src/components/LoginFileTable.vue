@@ -9,13 +9,37 @@
             <h2>Here is a list of your uploaded files</h2>
             <p><b>Left click Name to download</b></p>
             <p><b>Right click Name to copy link</b></p>
-            <table class="table" >
+            <table class="table">
                 <input :class="searchSuccess == null ? '' : searchSuccess ? 'correct' : 'incorrect'" type="text"
                     name="filter" id="filter" @input="w => SearchField(w.target.value)">
                 <thead v-if="files.length > 0">
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Size</th>
+                    <th @click="sortBy('id')">
+                        <div>
+                            <p>ID</p>
+                            <div v-if="sorted.col == 'id'">
+                                <i v-if="!sorted.dir" class="gg-arrow-down"></i>
+                                <i v-else class="gg-arrow-up"></i>
+                            </div>
+                        </div>
+                    </th>
+                    <th @click="sortBy('name')">
+                        <div>
+                            <p>Name</p>
+                            <div v-if="sorted.col == 'name'">
+                                <i v-if="!sorted.dir" class="gg-arrow-down"></i>
+                                <i v-else class="gg-arrow-up"></i>
+                            </div>
+                        </div>
+                    </th>
+                    <th @click="sortBy('size')">
+                        <div>
+                            <p>Size</p>
+                            <div v-if="sorted.col == 'size'">
+                                <i v-if="!sorted.dir" class="gg-arrow-down"></i>
+                                <i v-else class="gg-arrow-up"></i>
+                            </div>
+                        </div>
+                    </th>
                     <th>Previous (ID)</th>
                     <th>Next (ID)</th>
                     <th>Public</th>
@@ -35,7 +59,8 @@
                             @change="e => onChangeNext(e.target.value, file)" :value="file.next ? file.next.id : ''"
                             type="number"></td>
                     <td>
-                        <input @change="w => emit('publicChange',file, w.target.checked)" :checked="file.isPublic" type="checkbox" name="">
+                        <input @change="w => emit('publicChange', file, w.target.checked)" :checked="file.isPublic"
+                            type="checkbox" name="">
                     </td>
                 </tr>
             </table>
@@ -45,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { toReadable } from '../compositions/filedownloader';
 import { chunkSize } from '../compositions/fileuploader';
 import { getLinkFromFile } from '../compositions/filedownloader';
@@ -55,13 +80,24 @@ const display = ref("none");
 const position = ref({ x: 0, y: 0 });
 const timeout = ref();
 const searchSuccess = ref(null);
+const sorted = ref({ col: 'id', dir: false });
 
 const props = defineProps({
     files: { type: Array, required: true },
     Showfolders: { type: Boolean }
 });
 
-const emit = defineEmits(['filterText', 'publicChange']);
+const emit = defineEmits(['filterText', 'publicChange', 'sort']);
+
+const sortBy = (col) => {
+    if (sorted.value.col == col) {
+        sorted.value.dir = !sorted.value.dir;
+    } else {
+        sorted.value.col = col;
+        sorted.value.dir = false;
+    }
+    emit('sort', sorted.value);
+}
 
 let tout = null;
 const SearchField = (text) => {
@@ -144,6 +180,22 @@ function clickRow(file) {
 </script>
 
 <style scoped>
+@import url('https://css.gg/arrow-down.css');
+@import url('https://css.gg/arrow-up.css');
+
+th>div:first-child {
+    display: flex;
+}
+
+th:nth-child(-n+3) {
+    user-select: none;
+    cursor: pointer;
+}
+
+th p {
+    margin: auto 0;
+}
+
 .table {
     position: relative;
     width: 100%;
