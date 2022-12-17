@@ -1,14 +1,21 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView } from 'vue-router';
+import { ref } from 'vue';
 import router from './router';
 import { supabase } from './supabase';
 import useUser from './modules/useUser';
 import { onMounted } from 'vue';
 const { theUser, loadUser } = useUser();
+const windowWidth = ref(500);
 //import HelloWorld from './components/HelloWorld.vue'
 
 onMounted(async () => {
   await loadUser();
+  windowWidth.value = window.innerWidth;
+})
+
+addEventListener('resize', (w) => {
+  windowWidth.value = window.innerWidth;
 })
 
 function loggedin(u) {
@@ -26,11 +33,14 @@ async function logout() {
   router.push('/');
 }
 
+function windowSize() {
+  return window.innerWidth;
+}
 </script>
 
 <template>
   <div class="wrapper">
-    <RouterLink to="/" class="brnd">Perma File Store</RouterLink>
+    <RouterLink to="/" class="brnd">{{ windowWidth > 443 ? 'Perma File Store' : 'PFS' }}</RouterLink>
     <nav class="w-right">
       <div class="flex" v-if="theUser == null">
         <RouterLink to="/register">Register</RouterLink>
@@ -39,7 +49,7 @@ async function logout() {
       </div>
       <div v-else class="flex">
         <a @click="logout">Logout</a>
-        <span class="sm-disable">{{theUser.email}}</span>
+        <span class="sm-disable">{{ theUser.email }}</span>
         <RouterLink to="/files">Files</RouterLink>
         <RouterLink to="/public">Public</RouterLink>
       </div>
@@ -55,6 +65,13 @@ async function logout() {
 @media only screen and (max-width: 600px) {
   .sm-disable {
     display: none;
+  }
+
+}
+
+@media only screen and (max-width: 430px) {
+  .scaled {
+    scale: 0.8;
   }
 
 }
