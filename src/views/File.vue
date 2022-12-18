@@ -16,8 +16,7 @@
                 <button v-if="!clickedWatch" @click="() => clickedWatch = true"
                     :disabled="status.downloading">Watch</button>
                 <video ref="vtag" @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
-                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`"
-                    controls></video>
+                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" controls></video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
@@ -39,10 +38,11 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import { downloadWithStatus, toReadable, downloadFileUrl } from '../compositions/filedownloader';
 import router from '../router';
+import { supabase } from '../supabase';
 
 const route = useRoute();
 const data = ref({ msg: "Please wait fetching details...", found: false });
@@ -53,33 +53,80 @@ const audioExts = ref(['mp3', 'wav']);
 const imageExts = ref(['png', 'jpg', 'jpeg', 'gif']);
 const clickedWatch = ref(false);
 let vtag = ref(null);
+const props = defineProps({
+    theUser: {
+        type: Object,
+        required: false
+    }
+})
 
-function saveTimestamp() {
+async function saveTimestampDB() {
+    const currentTime = vtag.value.currentTime;
+    const fileid = filedata.value.fileid;
+    const { count } = await supabase
+        .from('VideoMarks')
+        .select('*', { count: 'estimated' })
+        .eq('userid', props.theUser.id);
+    if (count == 0) {
+        await supabase.
+            from('VideoMarks')
+            .insert({ userid: props.theUser.id, currentTime, fileid });
+    } else {
+        await supabase.
+            from('VideoMarks')
+            .update({ currentTime, fileid })
+            .eq('userid', props.theUser.id);
+    }
+}
+
+async function getTimeFromDB() {
+    const { data } = await supabase
+        .from('VideoMarks')
+        .select('currentTime')
+        .eq('fileid', filedata.value.fileid)
+
+    if (data.length == 0)
+        return null;
+    else
+        return data[0].currentTime;
+}
+
+async function saveTimestamp(next = null) {
     if (vtag.value) {
         localStorage.setItem(filedata.value.fileid, vtag.value.currentTime);
+        if (props.theUser) {
+            await saveTimestampDB();
+        }
     }
-    console.log("saved");
+    if (next)
+        next();
 }
-window.onunload = saveTimestamp;
-onUnmounted(saveTimestamp)
 
-const loadedVideo = (uid) => {
+onBeforeRouteLeave((to, from, next) => {
+    saveTimestamp(next);
+})
+onBeforeUnmount(() => {
+    saveTimestamp();
+});
+
+const loadedVideo = async (uid) => {
     const val = localStorage.getItem(uid);
-    console.log(`loaded: ${val}`);
     if (val) {
         vtag.value.currentTime = val;
+    } else {
+        const currentTime = await getTimeFromDB();
+        console.log(currentTime);
+        if (currentTime) {
+            vtag.value.currentTime = val;
+        }
     }
+    saveTimestamp();
 }
 
 const prepareWatch = async () => {
     await startDownload(false);
     status.value.downloading = false;
 }
-
-const beforeUnloadListener = (event) => {
-    event.preventDefault();
-    return event.returnValue = "Are you sure you want to leave?";
-};
 
 function gotoLinkFromUID(uid) {
     saveTimestamp();

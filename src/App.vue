@@ -3,16 +3,33 @@ import { RouterLink, RouterView } from 'vue-router';
 import router from './router';
 import { supabase } from './supabase';
 import useUser from './modules/useUser';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 const { theUser, loadUser } = useUser();
-//import HelloWorld from './components/HelloWorld.vue'
+const bookMark = ref(null);
+
+async function getBookmarkCount() {
+  const { data } = await supabase
+    .from('VideoMarks')
+    .select('fileid')
+    .eq('userid', theUser.value.id)
+  if (data.length == 0)
+    bookMark.value = null;
+  else
+    bookMark.value = data[0];
+}
 
 onMounted(async () => {
   await loadUser();
+  if (theUser.value) {
+    await getBookmarkCount();
+  }
 })
 
 function loggedin(u) {
   theUser.value = u.value
+  if (theUser.value) {
+    getBookmarkCount();
+  }
 }
 
 async function logout() {
@@ -25,6 +42,11 @@ async function logout() {
   theUser.value = null;
   router.push('/');
 }
+const more = ref(false);
+function changeMore() {
+  more.value = !more.value;
+}
+
 </script>
 
 <template>
@@ -40,7 +62,11 @@ async function logout() {
         <a @click="logout">Logout</a>
         <span class="sm-disable">{{ theUser.email }}</span>
         <RouterLink to="/files">Files</RouterLink>
-        <RouterLink to="/public">Public</RouterLink>
+        <div @click="changeMore"><a>{{ more ? 'Less' : 'More' }}</a></div>
+        <div @click="changeMore" :class="more ? 'more2' : 'more'">
+          <RouterLink to="/public">Public</RouterLink>
+          <RouterLink v-if="bookMark" :to="`/file/${bookMark.fileid}`">Continue Watching</RouterLink>
+        </div>
       </div>
     </nav>
   </div>
@@ -59,10 +85,11 @@ async function logout() {
 }
 
 @media only screen and (max-width: 435px) {
-  
+
   .sm-content span {
     display: none;
   }
+
   .sm-content:after {
     content: 'PFS';
   }
@@ -88,10 +115,45 @@ async function logout() {
   padding: 10px 10px;
 }
 
+.more {
+  position: absolute;
+  right: 0px;
+  top: 69px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  user-select: none;
+  background-color: #0F0F0F11;
+
+  max-height: 0;
+  transition: max-height 0.15s ease-out;
+  overflow: hidden;
+}
+
+.more2 {
+  position: absolute;
+  right: 0px;
+  top: 69px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  user-select: none;
+  background-color: #0F0F0F11;
+
+  max-height: 500px;
+  transition: max-height 0.3s ease-in;
+  overflow: hidden;
+}
+
+.more a,
+.more2 a {
+  width: -webkit-fill-available;
+  text-align: left;
+}
+
 .wrapper a {
   float: left;
   color: black;
-  text-align: center;
   padding: 12px;
   text-decoration: none;
   font-size: 18px;
@@ -99,6 +161,7 @@ async function logout() {
   transition: .3s;
   cursor: pointer;
   border-radius: 30px 0px / 30px 0px;
+  user-select: none;
 }
 
 .wrapper a .brnd {

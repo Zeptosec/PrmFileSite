@@ -67,14 +67,14 @@ async function getPageData() {
     if (searchStr.value) {
         rez = await supabase
             .from('Files')
-            .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
+            .select('id, size, chunks, name, fileid, previous(id), next(id), isPublic', { count: 'estimated' })
             .like("name", `%${searchStr.value}%`)
             .order(ordering.value.col, { ascending: ordering.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
         rez = await supabase
             .from('Files')
-            .select('id, size, chunks, name, fileid, path, previous(id), next(id), isPublic', { count: 'estimated' })
+            .select('id, size, chunks, name, fileid, previous(id), next(id), isPublic', { count: 'estimated' })
             .order(ordering.value.col, { ascending: ordering.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
