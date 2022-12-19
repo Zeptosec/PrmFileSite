@@ -101,15 +101,18 @@ function edit(row) {
 }
 
 async function delRow(row) {
-    const rez = await supabase
-        .from('Movies')
-        .delete()
-        .eq('id', row.id)
-    if (rez.error) {
-        delmsg.value = rez.error;
-    } else {
-        delmsg.value = `Deleted id: ${row.id}`;
-        pageData.value = pageData.value.filter(w => w.id !== row.id);
+    let conf = confirm("You're about to delete " + row.name);
+    if (conf) {
+        const rez = await supabase
+            .from('Movies')
+            .delete()
+            .eq('id', row.id)
+        if (rez.error) {
+            delmsg.value = rez.error;
+        } else {
+            delmsg.value = `Deleted id: ${row.id}`;
+            pageData.value = pageData.value.filter(w => w.id !== row.id);
+        }
     }
 }
 

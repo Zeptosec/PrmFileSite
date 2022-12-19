@@ -27,7 +27,7 @@
                         </div>
                     </th>
                 </thead>
-                <tr v-for="(row, ind) in pageData" :key="ind" @click="router.push(`/movie/${row.id}`)">
+                <tr v-for="(row, ind) in pageData" :key="ind" @click="gotoMovie(row)">
                     <td>{{ row.id }}</td>
                     <td>{{ row.name }}</td>
                 </tr>
@@ -58,6 +58,14 @@ const amountPerPage = ref(50);
 const pageData = ref(null);
 const sorted = ref({ col: 'id', dir: false });
 const delmsg = ref(null);
+
+function gotoMovie(row) {
+    if (row.fileid) {
+        router.push(`/file/${row.fileid}`);
+    } else {
+        router.push(`/movie/${row.id}`);
+    }
+}
 
 let tout2 = null;
 watch(currentPage, () => {
@@ -100,7 +108,7 @@ async function getPageData() {
     } else {
         rez = await supabase
             .from('Movies')
-            .select('id, name')
+            .select('id, name, fileid')
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
@@ -129,6 +137,7 @@ onMounted(getPageData)
 td {
     cursor: pointer;
 }
+
 .row {
     display: flex;
     align-items: middle;

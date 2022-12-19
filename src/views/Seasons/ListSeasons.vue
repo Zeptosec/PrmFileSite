@@ -101,23 +101,26 @@ function edit(row) {
 }
 
 async function delRow(row) {
-    const { data, error } = await supabase
-        .from('Movies')
-        .select('name')
-        .contains('seasonsIds', [row.id])
-    if (data.length == 0) {
-        const rez = await supabase
-            .from('Seasons')
-            .delete()
-            .eq('id', row.id)
-        if (rez.error) {
-            delmsg.value = rez.error;
+    let conf = confirm(`You're about to delete ${row.name}`)
+    if (conf) {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('name')
+            .contains('seasonsIds', [row.id])
+        if (data.length == 0) {
+            const rez = await supabase
+                .from('Seasons')
+                .delete()
+                .eq('id', row.id)
+            if (rez.error) {
+                delmsg.value = rez.error;
+            } else {
+                delmsg.value = `Deleted id: ${row.id}`;
+                pageData.value = pageData.value.filter(w => w.id !== row.id);
+            }
         } else {
-            delmsg.value = `Deleted id: ${row.id}`;
-            pageData.value = pageData.value.filter(w => w.id !== row.id);
+            delmsg.value = `Can't delete because this season belongs to movies: ${data.map(w => w.name).join(", ")}`;
         }
-    } else {
-        delmsg.value = `Can't delete because this season belongs to movies: ${data.map(w => w.name).join(", ")}`;
     }
 }
 

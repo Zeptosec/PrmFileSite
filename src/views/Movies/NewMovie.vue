@@ -2,12 +2,17 @@
     <main>
         <div class="page" v-if="pageData != null">
             <h2>Select seasons in order</h2>
+            <button v-if="seltype === 0" @click="changeType(1)">select a single file</button>
+            <button v-if="seltype === 1" @click="changeType(0)">select seasons</button>
+
             <div class="form">
                 <h3>Search</h3>
                 <input type="text" @input="w => SearchField(w.target.value)">
             </div>
-            <OrderTable :files="pageData" :index-of="indexOf" @changeOrder="w => changeOrder(w.id)"
+            <OrderTable v-if="seltype === 0" :files="pageData" :index-of="indexOf" @changeOrder="w => changeOrder(w.id)"
                 @sort="w => sort(w)" />
+            <FileSelect v-if="seltype === 1" :files="pageData" @sort="w => sort(w)" @select="w => selected = w"
+                :selected="selected" />
             <div class="row">
                 <button v-if="currentPage > 1" @click="() => currentPage -= 1">Previous</button>
                 <button @click="() => currentPage += 1">Next</button>
@@ -27,6 +32,7 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue';
+import FileSelect from '../../components/FileSelect.vue';
 import OrderTable from '../../components/OrderTable.vue';
 import { supabase } from '../../supabase';
 
@@ -37,11 +43,13 @@ const amountPerPage = ref(50);
 const pageData = ref(null);
 const order = ref([]);
 const sorted = ref({ col: 'id', dir: false });
+const seltype = ref(0);
 
 const isCreating = ref(false);
 const seasonName = ref("");
 const createError = ref(null);
 const error = ref(null);
+const selected = ref({});
 const props = defineProps({
     theUser: { type: Object, required: true }
 })
@@ -52,6 +60,12 @@ watch(currentPage, () => {
     getPageData();
 });
 
+function changeType(type) {
+    seltype.value = type;
+    pageData.value = null;
+    SearchField(null);
+}
+
 async function Create() {
     isCreating.value = true;
     createError.value = null;
@@ -60,19 +74,33 @@ async function Create() {
         createError.value = "Season name is too long";
     } else if (seasonName.value.length == 0) {
         createError.value = "Season name can't be empty";
-    } else if (order.value.length == 0) {
-        createError.value = "No episodes were selected";
+    }
+    if (seltype === 0) {
+        if (order.value.length == 0) {
+            createError.value = "No episodes were selected";
+        }
+    } else {
+        if (selected.value == null) {
+            createError.value = "No file was selected";
+        }
     }
 
     if (!createError.value) {
+        let insertObj;
+        if (seltype === 0) {
+            insertObj = { name: seasonName.value, seasonsIds: order.value, userid: props.theUser.id };
+        } else {
+            insertObj = { name: seasonName.value, fileid: selected.value.fileid, userid: props.theUser.id }
+        }
         const { error } = await supabase
             .from('Movies')
-            .insert({ name: seasonName.value, seasonsIds: order.value, userid: props.theUser.id })
+            .insert(insertObj)
         if (error) {
             createError.value = error;
         } else {
             createError.value = "Created";
             order.value = [];
+            selected.value = {};
         }
     }
 
@@ -87,6 +115,7 @@ function indexOf(val) {
 }
 
 const changeOrder = (id) => {
+
     let ind = order.value.indexOf(id);
     if (ind != -1) {
         order.value.splice(ind, 1);
@@ -116,20 +145,39 @@ async function getPageData() {
     msg.value = "Loading...";
     let rez;
     if (searchStr.value) {
-        rez = await supabase
-            .from('Seasons')
-            .select('id, name')
-            .eq('userid', props.theUser.id)
-            .like("name", `%${searchStr.value}%`)
-            .order(sorted.value.col, { ascending: sorted.value.dir })
-            .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        if (seltype.value === 0) {
+            rez = await supabase
+                .from('Seasons')
+                .select('id, name')
+                .eq('userid', props.theUser.id)
+                .like("name", `%${searchStr.value}%`)
+                .order(sorted.value.col, { ascending: sorted.value.dir })
+                .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        } else {
+            rez = await supabase
+                .from('Files')
+                .select('id, name, fileid')
+                .not('fileid', 'is', null)
+                .like("name", `%${searchStr.value}%`)
+                .order(sorted.value.col, { ascending: sorted.value.dir })
+                .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        }
     } else {
-        rez = await supabase
-            .from('Seasons')
-            .select('id, name')
-            .eq('userid', props.theUser.id)
-            .order(sorted.value.col, { ascending: sorted.value.dir })
-            .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        if (seltype.value === 0) {
+            rez = await supabase
+                .from('Seasons')
+                .select('id, name')
+                .eq('userid', props.theUser.id)
+                .order(sorted.value.col, { ascending: sorted.value.dir })
+                .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        } else {
+            rez = await supabase
+                .from('Files')
+                .select('id, name, fileid')
+                .not('fileid', 'is', null)
+                .order(sorted.value.col, { ascending: sorted.value.dir })
+                .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
+        }
     }
 
     const { data, error } = rez;
@@ -155,6 +203,7 @@ onMounted(getPageData);
     grid-template-columns: 200px;
     gap: 10px;
     justify-content: center;
+    margin-top: 15px;
 }
 
 .form h3 {
