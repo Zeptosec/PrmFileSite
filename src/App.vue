@@ -56,7 +56,11 @@ function changeMore() {
       <div class="flex" v-if="theUser == null">
         <RouterLink to="/register">Register</RouterLink>
         <RouterLink to="/login">Login</RouterLink>
-        <RouterLink to="/public">Public</RouterLink>
+        <div @click="changeMore"><a>{{ more ? 'Less' : 'More' }}</a></div>
+        <div @click="changeMore" :class="more ? 'more2' : 'more'">
+          <RouterLink to="/public">Public</RouterLink>
+          <RouterLink to="/movies">Movies</RouterLink>
+        </div>
       </div>
       <div v-else class="flex">
         <a @click="logout">Logout</a>
@@ -65,6 +69,9 @@ function changeMore() {
         <div @click="changeMore"><a>{{ more ? 'Less' : 'More' }}</a></div>
         <div @click="changeMore" :class="more ? 'more2' : 'more'">
           <RouterLink to="/public">Public</RouterLink>
+          <RouterLink to="/movies">Movies</RouterLink>
+          <RouterLink to="/listmovies">Your Movies</RouterLink>
+          <RouterLink to="/listseasons">Your Seasons</RouterLink>
           <RouterLink v-if="bookMark" :to="`/file/${bookMark.fileid}`">Continue Watching</RouterLink>
         </div>
       </div>
@@ -124,6 +131,7 @@ function changeMore() {
   align-items: flex-start;
   user-select: none;
   background-color: #0F0F0F11;
+  z-index: 10;
 
   max-height: 0;
   transition: max-height 0.15s ease-out;
@@ -139,6 +147,7 @@ function changeMore() {
   align-items: flex-start;
   user-select: none;
   background-color: #0F0F0F11;
+  z-index: 10;
 
   max-height: 500px;
   transition: max-height 0.3s ease-in;

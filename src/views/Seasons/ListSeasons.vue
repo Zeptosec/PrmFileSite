@@ -1,7 +1,10 @@
 <template>
     <main>
         <div v-if="pageData">
-            <h2>Movies</h2>
+            <h2>Here's a list of your created seasons</h2>
+            <RouterLink to="/newseason">
+                <button>New season</button>
+            </RouterLink>
             <div class="form">
                 <h3>Search</h3>
                 <input type="text" @input="w => SearchField(w.target.value)">
@@ -26,16 +29,27 @@
                             </div>
                         </div>
                     </th>
+                    <th>Operations</th>
                 </thead>
-                <tr v-for="(row, ind) in pageData" :key="ind" @click="router.push(`/movie/${row.id}`)">
+                <tr v-for="(row, ind) in pageData" :key="ind">
                     <td>{{ row.id }}</td>
                     <td>{{ row.name }}</td>
+                    <td>
+                        <div class="operations">
+                            <div @click="edit(row)">
+                                <i class="gg-pen"></i>
+                            </div>
+                            <div @click="delRow(row)">
+                                <i class="gg-close"></i>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
             </table>
             <h3 class="error" v-else>Nothing found</h3>
             <div class="row">
                 <button v-if="currentPage > 1" @click="() => currentPage -= 1">Previous</button>
-                <button v-if="pageData.length == 51" @click="() => currentPage += 1">Next</button>
+                <button v-if="pageData.length > 0" @click="() => currentPage += 1">Next</button>
             </div>
 
             <h3 class="error">{{ delmsg }}</h3>
@@ -48,8 +62,8 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue';
-import { supabase } from '../supabase';
-import router from '../router';
+import { supabase } from '../../supabase';
+import router from '../../router';
 
 const searchStr = ref(null);
 const msg = ref(null);
@@ -58,6 +72,10 @@ const amountPerPage = ref(50);
 const pageData = ref(null);
 const sorted = ref({ col: 'id', dir: false });
 const delmsg = ref(null);
+
+const props = defineProps({
+    theUser: { type: Object, required: true }
+})
 
 let tout2 = null;
 watch(currentPage, () => {
@@ -77,6 +95,32 @@ const SearchField = (text) => {
     }, 1000);
 }
 
+
+function edit(row) {
+    router.push(`/editseason/${row.id}`);
+}
+
+async function delRow(row) {
+    const { data, error } = await supabase
+        .from('Movies')
+        .select('name')
+        .contains('seasonsIds', [row.id])
+    if (data.length == 0) {
+        const rez = await supabase
+            .from('Seasons')
+            .delete()
+            .eq('id', row.id)
+        if (rez.error) {
+            delmsg.value = rez.error;
+        } else {
+            delmsg.value = `Deleted id: ${row.id}`;
+            pageData.value = pageData.value.filter(w => w.id !== row.id);
+        }
+    } else {
+        delmsg.value = `Can't delete because this season belongs to movies: ${data.map(w => w.name).join(", ")}`;
+    }
+}
+
 const sortBy = (col) => {
     if (sorted.value.col == col) {
         sorted.value.dir = !sorted.value.dir;
@@ -92,15 +136,17 @@ async function getPageData() {
     let rez;
     if (searchStr.value) {
         rez = await supabase
-            .from('Movies')
+            .from('Seasons')
             .select('id, name')
+            .eq('userid', props.theUser.id)
             .like("name", `%${searchStr.value}%`)
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
         rez = await supabase
-            .from('Movies')
+            .from('Seasons')
             .select('id, name')
+            .eq('userid', props.theUser.id)
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
@@ -112,7 +158,7 @@ async function getPageData() {
         return;
     }
     if (!data) {
-        msg.value = "No movies found";
+        msg.value = "Currently you have no files stored.";
         return;
     }
     pageData.value = data;
@@ -126,9 +172,6 @@ onMounted(getPageData)
 @import url('https://css.gg/pen.css');
 @import url('https://css.gg/close.css');
 
-td {
-    cursor: pointer;
-}
 .row {
     display: flex;
     align-items: middle;

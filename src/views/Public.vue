@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <main>
         <h2 v-if="files.length == 0">Loading...</h2>
         <FileTable v-else :files="files" :heading="'Here are the public files'" />
-    </div>
+    </main>
 </template>
 
 <script setup>

@@ -1,8 +1,8 @@
 <template>
     <main>
         <div class="filetable">
-            <LoginFileTable @sort="(w) => changeSort(w)" @publicChange="(f, v) => changePublic(f, v)" @filter-text="w => filterRezults(w)"
-                :files="files" :theUser="theUser" />
+            <LoginFileTable @sort="(w) => changeSort(w)" @publicChange="(f, v) => changePublic(f, v)"
+                @filter-text="w => filterRezults(w)" :files="files" :theUser="theUser" />
 
             <div class="row">
                 <button v-if="currentPage > 1" @click="() => currentPage -= 1">Previous</button>
@@ -46,11 +46,16 @@ const changePublic = async (file, val) => {
         .eq('id', file.id);
 }
 
-watch(currentPage, getPageData);
+let tout2 = null;
+watch(currentPage, () => {
+    clearTimeout(tout2);
+    getPageData()
+});
 
 const filterRezults = (text) => {
     searchStr.value = text;
-    getPageData();
+    tout2 = setTimeout(getPageData, 100);
+    currentPage.value = 1;
 }
 
 const canGoNext = () => {

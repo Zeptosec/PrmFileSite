@@ -1,7 +1,10 @@
 <template>
     <main>
         <div v-if="pageData">
-            <h2>Movies</h2>
+            <div class="m-small">
+                <h2>{{ movie.name }}</h2>
+                <h2>seasons</h2>
+            </div>
             <div class="form">
                 <h3>Search</h3>
                 <input type="text" @input="w => SearchField(w.target.value)">
@@ -27,7 +30,7 @@
                         </div>
                     </th>
                 </thead>
-                <tr v-for="(row, ind) in pageData" :key="ind" @click="router.push(`/movie/${row.id}`)">
+                <tr v-for="(row, ind) in pageData" :key="ind" @click="router.push(`/season/${row.id}`)">
                     <td>{{ row.id }}</td>
                     <td>{{ row.name }}</td>
                 </tr>
@@ -49,8 +52,10 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import { supabase } from '../supabase';
+import { useRoute } from 'vue-router';
 import router from '../router';
 
+const route = useRoute();
 const searchStr = ref(null);
 const msg = ref(null);
 const currentPage = ref(1);
@@ -58,6 +63,7 @@ const amountPerPage = ref(50);
 const pageData = ref(null);
 const sorted = ref({ col: 'id', dir: false });
 const delmsg = ref(null);
+const movie = ref(null);
 
 let tout2 = null;
 watch(currentPage, () => {
@@ -92,14 +98,14 @@ async function getPageData() {
     let rez;
     if (searchStr.value) {
         rez = await supabase
-            .from('Movies')
+            .from('Seasons')
             .select('id, name')
             .like("name", `%${searchStr.value}%`)
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     } else {
         rez = await supabase
-            .from('Movies')
+            .from('Seasons')
             .select('id, name')
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
@@ -112,12 +118,28 @@ async function getPageData() {
         return;
     }
     if (!data) {
-        msg.value = "No movies found";
+        msg.value = "No seasons found";
         return;
     }
     pageData.value = data;
 }
-onMounted(getPageData)
+onMounted(async () => {
+    const { data, error } = await supabase
+        .from("Movies")
+        .select('id, name')
+        .eq('id', route.params.id);
+    if(error) {
+        msg.value = error;
+        return;
+    }
+    if (data.length == 0) {
+        msg.value = "Movie not found";
+    } else {
+        movie.value = data[0];
+        getPageData();
+    }
+
+})
 </script>
 
 <style scoped>
@@ -126,9 +148,14 @@ onMounted(getPageData)
 @import url('https://css.gg/pen.css');
 @import url('https://css.gg/close.css');
 
+.m-small>h2 {
+    margin: 2px;
+}
+
 td {
     cursor: pointer;
 }
+
 .row {
     display: flex;
     align-items: middle;
