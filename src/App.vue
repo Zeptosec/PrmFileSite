@@ -47,6 +47,14 @@ function changeMore() {
   more.value = !more.value;
 }
 
+let tout = null;
+document.addEventListener('mouseup', () => {
+  if (!more.value) return;
+  clearTimeout(tout);
+  setTimeout(() => {
+    tout = more.value = false;
+  }, 50)
+})
 </script>
 
 <template>
@@ -130,7 +138,7 @@ function changeMore() {
   flex-direction: column;
   align-items: flex-start;
   user-select: none;
-  background-color: #0F0F0F11;
+  background-color: #1facff;
   z-index: 10;
 
   max-height: 0;
@@ -146,7 +154,7 @@ function changeMore() {
   flex-direction: column;
   align-items: flex-start;
   user-select: none;
-  background-color: #0F0F0F11;
+  background-color: #1facff;
   z-index: 10;
 
   max-height: 500px;

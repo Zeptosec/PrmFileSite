@@ -100,6 +100,7 @@ async function getPageData() {
         rez = await supabase
             .from('Seasons')
             .select('id, name')
+            .in('id', movie.value.seasonsIds)
             .like("name", `%${searchStr.value}%`)
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
@@ -107,6 +108,7 @@ async function getPageData() {
         rez = await supabase
             .from('Seasons')
             .select('id, name')
+            .in('id', movie.value.seasonsIds)
             .order(sorted.value.col, { ascending: sorted.value.dir })
             .range((currentPage.value - 1) * amountPerPage.value, currentPage.value * amountPerPage.value);
     }
@@ -126,18 +128,23 @@ async function getPageData() {
 onMounted(async () => {
     const { data, error } = await supabase
         .from("Movies")
-        .select('id, name')
+        .select('id, name, seasonsIds')
         .eq('id', route.params.id);
-    if(error) {
+    if (error) {
         msg.value = error;
+        console.log(error);
         return;
     }
     if (data.length == 0) {
         msg.value = "Movie not found";
-    } else {
-        movie.value = data[0];
-        getPageData();
+        return;
     }
+    if (!data[0].seasonsIds) {
+        msg.value = "This movie doesn't have any seasons";
+        return;
+    }
+    movie.value = data[0];
+    getPageData();
 
 })
 </script>

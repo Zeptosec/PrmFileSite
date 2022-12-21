@@ -75,7 +75,7 @@ async function Create() {
     } else if (seasonName.value.length == 0) {
         createError.value = "Season name can't be empty";
     }
-    if (seltype === 0) {
+    if (seltype.value === 0) {
         if (order.value.length == 0) {
             createError.value = "No episodes were selected";
         }
@@ -87,7 +87,7 @@ async function Create() {
 
     if (!createError.value) {
         let insertObj;
-        if (seltype === 0) {
+        if (seltype.value === 0) {
             insertObj = { name: seasonName.value, seasonsIds: order.value, userid: props.theUser.id };
         } else {
             insertObj = { name: seasonName.value, fileid: selected.value.fileid, userid: props.theUser.id }
