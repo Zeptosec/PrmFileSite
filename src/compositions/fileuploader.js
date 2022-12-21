@@ -100,32 +100,32 @@ const limit = 15;
  */
 const getReserve = async (url) => {
     let completed = null;
-    if (pendingReserve) {
-        return { completed, success: false };
-    }
-    pendingReserve = true;
+    // if (pendingReserve) {
+    //     return { completed, success: false };
+    // }
+    // pendingReserve = true;
     //console.log(`promises.length >= limit: ${promises.length} >= ${limit}`)
     if (promises.length >= limit) {
         //console.log(`Promise array is full waiting for one to finish`);
         completed = await Promise.any(promises);
         //console.log(`Promise number ${completed} finished`);
     }
-    let res;
-    try {
-        //console.log(`trying to reserve`);
-        res = await axios.get(url);
-    } catch (err) {
+    // let res;
+    // try {
+    //     //console.log(`trying to reserve`);
+    //     res = await axios.get(url);
+    // } catch (err) {
         //console.log(`Got an error while reserving if its 451 then just wait..`);
-        console.log(err);
-        setTimeout(() => pendingReserve = false, 1000);
-        return { completed, success: false };
-    }
-    if (res.status != 202) {
-        console.log(`Could not reserve..`);
-        setTimeout(() => pendingReserve = false, 1000);
-        return { completed, success: false };
-    }
-    pendingReserve = false;
+    //     console.log(err);
+    //     setTimeout(() => pendingReserve = false, 1000);
+    //     return { completed, success: false };
+    // }
+    // if (res.status != 202) {
+    //     console.log(`Could not reserve..`);
+    //     setTimeout(() => pendingReserve = false, 1000);
+    //     return { completed, success: false };
+    // }
+    // pendingReserve = false;
     return { completed, success: true };
 }
 
