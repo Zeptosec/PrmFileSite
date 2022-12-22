@@ -59,7 +59,6 @@ const props = defineProps({
         required: false
     }
 })
-
 async function saveTimestampDB() {
     const currentTime = vtag.value.currentTime;
     const fileid = filedata.value.fileid;
@@ -110,16 +109,17 @@ onBeforeUnmount(() => {
 });
 
 const loadedVideo = async (uid) => {
-    const val = localStorage.getItem(uid);
-    if (val) {
-        vtag.value.currentTime = val;
-    } else {
-        const currentTime = await getTimeFromDB();
-        console.log(currentTime);
-        if (currentTime) {
-            vtag.value.currentTime = val;
-        }
+    let val = localStorage.getItem(uid);
+    let dbTime = 0;
+    if(props.theUser)
+        dbTime = await getTimeFromDB();
+    if(val == null) val = 0;
+    if(dbTime == null) dbTime = 0;
+    if(dbTime > val){
+        val = dbTime;
     }
+    vtag.value.currentTime = val;
+    vtag.value.addEventListener('pause', w => saveTimestamp());
     saveTimestamp();
 }
 
