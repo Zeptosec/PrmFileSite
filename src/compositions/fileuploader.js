@@ -73,9 +73,6 @@ const uploadChunkWithStatus = async (chunk, url, status, index, place, theUser) 
         } catch (err) {
             console.log("Failed to upload chunk retrying...");
             console.log(err);
-            if (err.response.data) {
-                console.log(err.response.data);
-            }
             await new Promise(r => setTimeout(r, 3000));
             //throw Error(err.response.data.error)
         }
