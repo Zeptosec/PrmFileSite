@@ -15,8 +15,11 @@
             <div v-if="filedata && videoExts.includes(filedata.ext)" class="watch">
                 <button v-if="!clickedWatch" @click="() => clickedWatch = true"
                     :disabled="status.downloading">Watch</button>
-                <video ref="vtag" @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch"
-                    :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" controls></video>
+                <video ref="vtag" @loadeddata="loadedVideo(filedata.fileid)" v-if="clickedWatch" crossorigin="" controls>
+                    <source :src="`https://vid-str-nigerete123.koyeb.app/video/${route.params.id}`" type="video/mp4" />
+                    <track label="English" kind="subtitles" srclang="en"
+                        src="https://frxcr-zeptosec.koyeb.app/https://cdn.discordapp.com/attachments/1025526944776867952/1056242126859554867/breaking_bad_s04e07_720p_brrip_sujaidr.vtt" />
+                </video>
             </div>
 
             <div v-if="filedata && audioExts.includes(filedata.ext)" class="watch">
@@ -111,11 +114,11 @@ onBeforeUnmount(() => {
 const loadedVideo = async (uid) => {
     let val = localStorage.getItem(uid);
     let dbTime = 0;
-    if(props.theUser)
+    if (props.theUser)
         dbTime = await getTimeFromDB();
-    if(val == null) val = 0;
-    if(dbTime == null) dbTime = 0;
-    if(dbTime > val){
+    if (val == null) val = 0;
+    if (dbTime == null) dbTime = 0;
+    if (dbTime > val) {
         val = dbTime;
     }
     vtag.value.currentTime = val;

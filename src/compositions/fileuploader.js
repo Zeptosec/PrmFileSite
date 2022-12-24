@@ -185,6 +185,7 @@ export const uploadFilesWithStatus2 = async (files, url, theUser, status) => {
     if (files == null) return;
     // when im not lazy would be a good idea to add typescript
     status.value.finished = false;
+    let tmpStatus = [];
     for (let i = 0; i < files.length; i++) {
         const fstatus = ref({
             name: files[i].file.name,
@@ -197,11 +198,12 @@ export const uploadFilesWithStatus2 = async (files, url, theUser, status) => {
             savedFileData: null
         });
         status.value.files.push(fstatus);
+        tmpStatus.push(fstatus);
     }
-
+    console.log(status.value);
     for (let i = 0; i < files.length; i++) {
         try {
-            await uploadFileWithStatus2(files[i].file, url, theUser, status.value.files[i]);
+            await uploadFileWithStatus2(files[i].file, url, theUser, tmpStatus[i]);
         } catch (err) {
             status.value.files[i].value.error = err.message;
             status.value.files[i].value.retryFunction = RetryFunction;

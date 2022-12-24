@@ -1,16 +1,13 @@
 <script setup>
 import useFileList from '../compositions/filelist';
-import { chunkSize, uploadFilesWithStatus, uploadFilesWithStatus2 } from '../compositions/fileuploader';
+import { uploadFilesWithStatus2 } from '../compositions/fileuploader';
 import DropZone from '../components/DropZone.vue';
 import FilePreview from '../components/FilePreview.vue';
 import { ref } from 'vue';
-import { supabase } from '../supabase';
 import FileTable from '../components/FileTable.vue';
-import { getIdFromLink } from '../compositions/filedownloader';
 const { files, addFiles, removeFile } = useFileList();
 const apiEndPoint = /*"http://localhost:3001";*/"https://tartan-general-scion.glitch.me";
 const isUploading = ref(false);
-const downloadLinks = ref([]);
 const errMsg = ref(null);
 const status = ref({ files: [], finished: true, hasErrors: false });
 const props = defineProps({
@@ -24,18 +21,6 @@ const props = defineProps({
 function onInputChange(e) {
   addFiles(e.target.files)
   e.target.value = null // reset so that selecting the same file again will still cause it to fire this change
-}
-
-async function savObjsToDB(objs, table) {
-  if (!objs || objs.length == 0)
-    return null;
-  const { error, data } = await supabase
-    .from(table)
-    .insert(objs);
-  if (error) {
-    throw Error(error);
-  }
-  return data;
 }
 
 const beforeUnloadListener = (event) => {
@@ -56,8 +41,6 @@ async function upload2() {
       errMsg.value = "Server did not respond!";
       return;
     }
-    let filesFrom = status.value.files.length;
-    let filesTo = filesFrom + files.value.length;
     // upload files function
 
     await uploadFilesWithStatus2(files.value, `${apiEndPoint}/api/upload`, props.theUser, status);
@@ -72,68 +55,6 @@ async function upload2() {
   }
 }
 
-async function upload() {
-  isUploading.value = true;
-  errMsg.value = "Waking up the server...";
-  addEventListener("beforeunload", beforeUnloadListener, {capture: true});
-  try {
-    let res = await fetch(apiEndPoint);
-    if (res.ok) {
-      errMsg.value = "Server awake. Starting the upload...";
-    }
-    let filesFrom = status.value.files.length;
-    let filesTo = filesFrom + files.value.length;
-    await uploadFilesWithStatus(files.value, `${apiEndPoint}/api/upload`, props.theUser, status);
-    // console.log("statuses");
-    // console.log(status.value);
-    if (props.theUser) {
-      let objs = [];
-      for (let i = filesFrom; i < filesTo; i++) {
-        let f = status.value.files[i].value;
-        if (f.error) continue;
-        if (f.size > chunkSize) {
-          objs.push({ name: f.name, chunks: getIdFromLink(f.location), userid: props.theUser.id, size: f.size });
-        } else {
-          objs.push({ name: f.name, chunks: getIdFromLink(f.location), userid: props.theUser.id, size: f.size, fileid: null });
-        }
-      }
-      // console.log("objs");
-      // console.log(objs);
-      if(objs.length == 0){
-        throw Error("Failed to upload");
-      }
-      const data = await savObjsToDB(objs, 'Files')
-      // console.log("Data");
-      // console.log(data);
-      let urls = [];
-      if (data) {
-        for (let i = 0; i < data.length; i++) {
-          if (data[i].fileid) {
-            urls.push({ location: "/file/" + data[i].fileid, name: data[i].name, size: data[i].size });
-          } else {
-            urls.push({ location: data[i].chunks[0], name: data[i].name, size: data[i].size });
-          }
-        }
-      }
-      //push to urls links from data.....
-      downloadLinks.value = [...downloadLinks.value, ...urls];
-    } else {
-      for (let i = filesFrom; i < filesTo; i++) {
-        let f = status.value.files[i].value;
-        if (f.error) continue;
-        downloadLinks.value.push({ location: f.location[0], name: f.name, size: f.size });
-      }
-    }
-    files.value = [];
-    errMsg.value = "Upload was successful";
-  } catch (err) {
-    console.log(err);
-    errMsg.value = err.message;
-  } finally {
-    removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
-    isUploading.value = false;
-  }
-}
 </script>
 
 <template>
@@ -153,12 +74,12 @@ async function upload() {
           <FilePreview v-for="file of files" :key="file.id" :file="file" tag="li" @remove="removeFile" />
         </ul>
       </DropZone>
-      <button v-show="files.length > 0" :disabled="isUploading" @click.prevent="upload2"
+      <button v-show="files.length > 0 && status.finished" :disabled="isUploading" @click.prevent="upload2"
         class="upload-button">Upload</button>
       <h2 v-show="errMsg" class="error">{{errMsg}}</h2>
       <div v-if="(status && !status.finished) || status.hasErrors">
         <h3>File uploading status</h3>
-        <i><b>wait until file status changes to uploaded</b></i>
+        <i><b>uploaded files will be shown down below</b></i>
         <table>
           <thead>
             <th>filename</th>
