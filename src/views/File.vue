@@ -104,6 +104,11 @@ async function saveTimestamp(next = null) {
         next();
 }
 
+const beforeUnloadListener = (event) => {
+  event.preventDefault();
+  return event.returnValue = "Are you sure you want to leave?";
+};
+
 onBeforeRouteLeave((to, from, next) => {
     saveTimestamp(next);
 })
