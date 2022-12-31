@@ -1,10 +1,10 @@
 import { ref } from "vue";
 import { supabase } from "../supabase";
 
-export default function useUser(){
+export default function useUser() {
     const theUser = ref(null);
 
-    const loadUser = async () => {
+    const loadUser = () => {
         theUser.value = supabase.auth.user();
     };
 

@@ -7,6 +7,17 @@ import { onMounted, ref } from 'vue';
 const { theUser, loadUser } = useUser();
 const bookMark = ref(null);
 
+const userLoader = async () => {
+  loadUser();
+  if (theUser.value) {
+    await getBookmarkCount();
+  }
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  userLoader();
+})
+
 async function getBookmarkCount() {
   const { data } = await supabase
     .from('VideoMarks')
@@ -18,12 +29,7 @@ async function getBookmarkCount() {
     bookMark.value = data[0];
 }
 
-onMounted(async () => {
-  await loadUser();
-  if (theUser.value) {
-    await getBookmarkCount();
-  }
-})
+onMounted(userLoader)
 
 function loggedin(u) {
   theUser.value = u.value
